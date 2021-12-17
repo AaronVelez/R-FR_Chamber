@@ -49,6 +49,7 @@ const char iot_data_bucket[] = IoT_DATA_BUCKET;
 #define SPIWIFI_ACK   11   // a.k.a BUSY or READY pin
 #define ESP32_GPIO0   -1
 #include <WiFiUdp.h>
+WiFiUDP ntpUDP;
 
 
 ////// Iot Thinger
@@ -175,6 +176,8 @@ const int DataBucket_frq = 150;       // Data bucket update frequency in seconds
 
 ////// Lamps and LEDs control variables
 // IoT control variables for Red Lamp
+bool R_Lamp_Manual_Ctrl = false;
+bool R_Lamp_Manual_ON = false;
 bool R_Lamp_Period_1 = true;
 bool R_Lamp_Period_2 = false;
 bool R_Lamp_Period_3 = false;
@@ -185,6 +188,8 @@ unsigned int R_Lamp_Period_1_OFF = 0;
 unsigned int R_Lamp_Period_2_OFF = 0;
 unsigned int R_Lamp_Period_3_OFF = 0;
 // IoT control variables for FarRed Lamp
+bool FR_Lamp_Manual_Ctrl = false;
+bool FR_Lamp_Manual_ON = false;
 bool FR_Lamp_Period_1 = true;
 bool FR_Lamp_Period_2 = false;
 bool FR_Lamp_Period_3 = false;
@@ -195,6 +200,8 @@ unsigned int FR_Lamp_Period_1_OFF = 0;
 unsigned int FR_Lamp_Period_2_OFF = 0;
 unsigned int FR_Lamp_Period_3_OFF = 0;
 // IoT control variables for FarRed LEDs
+bool FR_LEDs_Manual_Ctrl = false;
+int FR_LEDs_Manual_PWM = 0;
 bool FR_LEDs_Period_1 = true;
 bool FR_LEDs_Period_2 = false;
 bool FR_LEDs_Period_3 = false;
@@ -230,9 +237,11 @@ double RHSum_FR = 0;
 
 ////// Values to be logged. They will be the average over the last 5 minutes
 float TempAvg_R = 0;
-float RHAvg_FR = 0;
+float RHAvg_R = 0;
 float TempAvg_FR = 0;
 float RHAvg_FR = 0;
+
+
 
 
 
@@ -266,7 +275,7 @@ void setup() {
 			break;
 		}
 		if (i == 10) {
-			M5.Lcd.println(F("\nNo internet connection"));
+			Serial.println(F("\nNo internet connection"));
 			WiFi.disconnect();  // if no internet, disconnect. This prevents the board to be busy only trying to connect.
 		}
 	}
@@ -288,7 +297,7 @@ void setup() {
 
 	////// Initialize SD card
 	if (debug) { Serial.println(F("Setting SD card...")); }
-	sd.begin(SD_CS_PIN, SD_SCK_MHZ)
+	sd.begin(SD_CS_PIN, SD_SCK_MHZ);
 	// Reserve RAM memory for large and dynamic String object
 	// used in SD file write/read
 	// (prevents heap RAM framgentation)
@@ -299,15 +308,16 @@ void setup() {
 	////// Configure IoT
 	if (debug) { Serial.println(F("Configuring IoT...")); }
 	thing.add_wifi(ssid, password);
-
+	
 	// Define input resources
 	thing["Debug"] << [](pson& in) {
 		if (in.is_empty()) { in = debug; }
 		else { debug = in; }
 	};
-
 	thing["R_Lamp_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
+			in["R_Lamp_Manual_Ctrl"] = R_Lamp_Manual_Ctrl;
+			in["R_Lamp_Manual_ON"] = R_Lamp_Manual_ON;
 			in["R_Lamp_Period_1"] = R_Lamp_Period_1;
 			in["R_Lamp_Period_2"] = R_Lamp_Period_2;
 			in["R_Lamp_Period_3"] = R_Lamp_Period_3;
@@ -319,6 +329,8 @@ void setup() {
 			in["R_Lamp_Period_3_OFF"] = R_Lamp_Period_3_OFF;
 		}
 		else {
+			R_Lamp_Manual_Ctrl = in["R_Lamp_Manual_Ctrl"];
+			R_Lamp_Manual_ON = in["R_Lamp_Manual_ON"];
 			R_Lamp_Period_1 = in["R_Lamp_Period_1"];
 			R_Lamp_Period_2 = in["R_Lamp_Period_2"];
 			R_Lamp_Period_3 = in["R_Lamp_Period_3"];
@@ -330,9 +342,10 @@ void setup() {
 			R_Lamp_Period_3_OFF = in["R_Lamp_Period_3_OFF"];
 		}
 	};
-
 	thing["FR_Lamp_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
+			in["FR_Lamp_Manual_Ctrl"] = FR_Lamp_Manual_Ctrl;
+			in["FR_Lamp_Manual_ON"] = FR_Lamp_Manual_ON;
 			in["FR_Lamp_Period_1"] = FR_Lamp_Period_1;
 			in["FR_Lamp_Period_2"] = FR_Lamp_Period_2;
 			in["FR_Lamp_Period_3"] = FR_Lamp_Period_3;
@@ -344,6 +357,8 @@ void setup() {
 			in["FR_Lamp_Period_3_OFF"] = FR_Lamp_Period_3_OFF;
 		}
 		else {
+			FR_Lamp_Manual_Ctrl = in["FR_Lamp_Manual_Ctrl"];
+			FR_Lamp_Manual_ON = in["FR_Lamp_Manual_ON"];
 			FR_Lamp_Period_1 = in["FR_Lamp_Period_1"];
 			FR_Lamp_Period_2 = in["FR_Lamp_Period_2"];
 			FR_Lamp_Period_3 = in["FR_Lamp_Period_3"];
@@ -355,9 +370,10 @@ void setup() {
 			FR_Lamp_Period_3_OFF = in["FR_Lamp_Period_3_OFF"];
 		}
 	};
-
 	thing["FR_LEDs_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
+			in["FR_LEDs_Manual_Ctrl"] = FR_LEDs_Manual_Ctrl;
+			in["FR_LEDs_Manual_PWM"] = FR_LEDs_Manual_PWM;
 			in["FR_LEDs_Period_1"] = FR_LEDs_Period_1;
 			in["FR_LEDs_Period_2"] = FR_LEDs_Period_2;
 			in["FR_LEDs_Period_3"] = FR_LEDs_Period_3;
@@ -369,6 +385,8 @@ void setup() {
 			in["FR_LEDs_Period_3_OFF"] = FR_LEDs_Period_3_OFF;
 		}
 		else {
+			FR_LEDs_Manual_Ctrl = in["FR_LEDs_Manual_Ctrl"];
+			FR_LEDs_Manual_PWM = in["FR_LEDs_Manual_PWM"];
 			FR_LEDs_Period_1 = in["FR_LEDs_Period_1"];
 			FR_LEDs_Period_2 = in["FR_LEDs_Period_2"];
 			FR_LEDs_Period_3 = in["FR_LEDs_Period_3"];
@@ -380,27 +398,12 @@ void setup() {
 			FR_LEDs_Period_3_OFF = in["FR_LEDs_Period_3_OFF"];
 		}
 	};
-
-		
-
-
-
-
 	
-
-
-
-
-
-
-
-
 	// Define output resources
 	thing["RT_Temp_Red"] >> [](pson& out) { out = Temp_R; };
 	thing["RT_RH_Red"] >> [](pson& out) { out = RH_R; };
 	thing["RT_Temp_FarRed"] >> [](pson& out) { out = Temp_FR; };
 	thing["RT_RH_FarRed"] >> [](pson& out) { out = RH_FR; };
-
 	thing["Avg_Data"] >> [](pson& out) {
 		out["Time_Stamp"] = SD_local_t;
 		out["Temperature_Red_Chamber"] = TempAvg_R;
@@ -413,9 +416,44 @@ void setup() {
 		out["Sensors_OK"] = SensorsOKIoT;
 	};
 
+	
+
+	////// Start RTC
+	if (debug) { Serial.println(F("Starting RTC...")); }
 
 
+	//////// If internet, start NTP client engine
+	//////// and update RTC and system time
+	//////// If no internet, get time form RTC
 
+
+	////// Start SHT31 Temp and RH sensor
+	// Red Chamber sensor
+	if (debug) { Serial.println(F("Starting Temp/RH sensor Red...")); }
+	digitalWrite(I2C_Select_0_PIN, LOW);
+	if (sht3x.begin() != 0) {
+		if (debug) { Serial.println(F("Failed to initialize Red sensor, please confirm wire connection")); }
+	}
+	if (debug) {
+		Serial.print(F("Red sensor serial number: "));
+		Serial.println(sht3x.readSerialNumber());
+	}
+	if (!sht3x.softReset()) {
+		if (debug) { Serial.println(F("Failed to initialize Red sensor....")); }
+	}
+	// Far red Chamber sensor
+	if (debug) { Serial.println(F("Starting Temp/RH sensor Far red...")); }
+	digitalWrite(I2C_Select_0_PIN, HIGH);
+	if (sht3x.begin() != 0) {
+		if (debug) { Serial.println(F("Failed to initialize Far red sensor, please confirm wire connection")); }
+	}
+	if (debug) {
+		Serial.print(F("Far red sensor serial number: "));
+		Serial.println(sht3x.readSerialNumber());
+	}
+	if (!sht3x.softReset()) {
+		if (debug) { Serial.println(F("Failed to initialize Far red sensor....")); }
+	}
 
 
 }
@@ -425,3 +463,6 @@ void setup() {
 //////////////////////////////////////////////////////////////////////////
 // The loop function runs over and over again until power down or reset //
 //////////////////////////////////////////////////////////////////////////
+void loop() {
+
+}
