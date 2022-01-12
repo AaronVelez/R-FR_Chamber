@@ -12,12 +12,16 @@
 // Pins //
 //////////
 const int SD_CS_PIN = 10;				// SD on Addlogger M0 Feather 
-const int R_Chamber_Lamp_PIN = 16;		// Power Red chamber Lamp
-const int FR_Chamber_Lamp_PIN = 17;		// Power Red chamber Lamp
+const int R_Chamber_Lamp_PIN = 16;		// Power Actinic Lamp in Red chamber
+const int FR_Chamber_Lamp_PIN = 17;		// Power Actinic Lamp in Farred chamber
 const int I2C_Select_0_PIN = 18;		// I2C multiplexer digital select line
 const int I2C_Select_1_PIN = 19;		// I2C multiplexer digital select line
-const int FR_LEDs_PWM_PIN = 9;			// PWM  line to dim FarRed LEDs
-
+const int FR_1_LEDs_PIN = 9;			// Power Farred LEDs, circuit 1
+const int FR_2_LEDs_PIN = 11;			// Power Farred LEDs, circuit 2
+const int FR_1_LEDs_PWM_PIN = 12;		// PWM  line to dim FarRed LEDs, circuit 1
+const int FR_2_LEDs_PWM_PIN = 13;		// PWM  line to dim FarRed LEDs, circuit 2
+const int R_Chamber_Fan_PIN = 5;		// Power Fan in Red Chamber
+const int FR_Chamber_Fan_PIN = 6;		// Power Fan in Farred Chamber
 
 
 
@@ -81,8 +85,8 @@ int position = 0;
 
 
 ////// Time libraries
-#include <GravityRtc.h>
-GravityRtc rtc;
+#include <RTClib.h>
+RTC_PCF8523 rtc;
 #include <TimeLib.h>
 #include <NTPClient.h>
 NTPClient timeClient(ntpUDP, "north-america.pool.ntp.org", 0, 300000); // For details, see https://github.com/arduino-libraries/NTPClient
@@ -114,7 +118,7 @@ String StaType = F("M0_WiFiNA_Thinger");
 String StaName = F("R-FR Chamber CINVESTAV");
 String Firmware = F("v1.0.0");
 //const float VRef = 3.3;
-bool debug = false;
+bool debug = true;
 
 
 ////// Log File & Headers
@@ -174,8 +178,8 @@ time_t t_DataBucket = 0;             // Last time Data was sent to bucket (in UN
 const int DataBucket_frq = 150;       // Data bucket update frequency in seconds (must be more than 60)
 
 
-////// Lamps and LEDs control variables
-// IoT control variables for Red Lamp
+////// Lamps, LEDs and Fan control variables
+/// IoT control variables for Actinic Lamp in Red Chamber
 bool R_Lamp_Manual_Ctrl = false;
 bool R_Lamp_Manual_ON = false;
 bool R_Lamp_Period_1 = true;
@@ -187,7 +191,7 @@ unsigned int R_Lamp_Period_3_ON = 0;
 unsigned int R_Lamp_Period_1_OFF = 0;
 unsigned int R_Lamp_Period_2_OFF = 0;
 unsigned int R_Lamp_Period_3_OFF = 0;
-// IoT control variables for FarRed Lamp
+/// IoT control variables for Actinic Lamp in Farred Chamber
 bool FR_Lamp_Manual_Ctrl = false;
 bool FR_Lamp_Manual_ON = false;
 bool FR_Lamp_Period_1 = true;
@@ -199,26 +203,54 @@ unsigned int FR_Lamp_Period_3_ON = 0;
 unsigned int FR_Lamp_Period_1_OFF = 0;
 unsigned int FR_Lamp_Period_2_OFF = 0;
 unsigned int FR_Lamp_Period_3_OFF = 0;
-// IoT control variables for FarRed LEDs
-bool FR_LEDs_Manual_Ctrl = false;
-int FR_LEDs_Manual_PWM = 0;
-bool FR_LEDs_Period_1 = true;
-bool FR_LEDs_Period_2 = false;
-bool FR_LEDs_Period_3 = false;
-unsigned int FR_LEDs_Period_1_ON = 0;
-unsigned int FR_LEDs_Period_2_ON = 0;
-unsigned int FR_LEDs_Period_3_ON = 0;
-unsigned int FR_LEDs_Period_1_OFF = 0;
-unsigned int FR_LEDs_Period_2_OFF = 0;
-unsigned int FR_LEDs_Period_3_OFF = 0;
-// RT Control variables
+/// IoT control variables for FarRed LEDs
+// Circuit 1
+bool FR_1_LEDs_Manual_Ctrl = false;
+int FR_1_LEDs_Manual_PWM = 0;
+bool FR_1_LEDs_Period_1 = true;
+bool FR_1_LEDs_Period_2 = false;
+bool FR_1_LEDs_Period_3 = false;
+unsigned int FR_1_LEDs_Period_1_ON = 0;
+unsigned int FR_1_LEDs_Period_2_ON = 0;
+unsigned int FR_1_LEDs_Period_3_ON = 0;
+unsigned int FR_1_LEDs_Period_1_OFF = 0;
+unsigned int FR_1_LEDs_Period_2_OFF = 0;
+unsigned int FR_1_LEDs_Period_3_OFF = 0;
+// Circuit 2
+bool FR_2_LEDs_Manual_Ctrl = false;
+int FR_2_LEDs_Manual_PWM = 0;
+bool FR_2_LEDs_Period_1 = true;
+bool FR_2_LEDs_Period_2 = false;
+bool FR_2_LEDs_Period_3 = false;
+unsigned int FR_2_LEDs_Period_1_ON = 0;
+unsigned int FR_2_LEDs_Period_2_ON = 0;
+unsigned int FR_2_LEDs_Period_3_ON = 0;
+unsigned int FR_2_LEDs_Period_1_OFF = 0;
+unsigned int FR_2_LEDs_Period_2_OFF = 0;
+unsigned int FR_2_LEDs_Period_3_OFF = 0;
+/// IoT control variables for Fans
+bool R_Fan_Manual_Ctrl = false;
+bool R_Fan_Manual_ON = false;
+bool FR_Fan_Manual_Ctrl = false;
+bool FR_Fan_Manual_ON = false;
+/// RT Control variables
 bool R_Chamber_Lamp_Ctrl = false;
 bool FR_Chamber_Lamp_Ctrl = false;
-int FR_LEDs_PWM_Duty_Ctrl = 0;
-// Variables from SD card
-bool SD_R_Chamber_Lamp_ON = false;
-bool SD_FR_Chamber_Lamp_ON = false;
-int SD_FR_LEDs_PWM_Duty = 0;
+bool FR_1_LEDs_Ctrl = false;
+bool FR_2_LEDs_Ctrl = false;
+int FR_1_LEDs_PWM_Duty_Ctrl = 0;
+int FR_2_LEDs_PWM_Duty_Ctrl = 0;
+bool R_Chamber_Fan_Ctrl = false;
+bool FR_Chamber_Fan_Ctrl = false;
+/// Variables from SD card
+bool SD_R_Chamber_Lamp_Ctrl = false;
+bool SD_FR_Chamber_Lamp_Ctrl = false;
+bool SD_FR_1_LEDs_Ctrl = false;
+bool SD_FR_2_LEDs_Ctrl = false;
+int SD_FR_1_LEDs_PWM_Duty_Ctrl = 0;
+int SD_FR_2_LEDs_PWM_Duty_Ctrl = 0;
+bool SD_R_Chamber_Fan_Ctrl = false;
+bool SD_FR_Chamber_Fan_Ctrl = false;
 
 
 ////// Measured instantaneous variables
@@ -283,16 +315,30 @@ void setup() {
 
 	////// Set pin modes of pins not associated with libraries
 	//analogReadResolution(12);
+	// Actinic light
 	pinMode(R_Chamber_Lamp_PIN, OUTPUT);
 	digitalWrite(R_Chamber_Lamp_PIN, LOW);
 	pinMode(FR_Chamber_Lamp_PIN, OUTPUT);
 	digitalWrite(FR_Chamber_Lamp_PIN, LOW);
+	//I2C multiplexer
 	pinMode(I2C_Select_0_PIN, OUTPUT);
 	digitalWrite(I2C_Select_0_PIN, LOW);
 	pinMode(I2C_Select_1_PIN, OUTPUT);
 	digitalWrite(I2C_Select_1_PIN, LOW);
-	pinMode(FR_LEDs_PWM_PIN, OUTPUT);
-	analogWrite(FR_LEDs_PWM_PIN, 0);
+	// Farred LEDs
+	pinMode(FR_1_LEDs_PIN, OUTPUT);
+	digitalWrite(FR_1_LEDs_PIN, LOW);
+	pinMode(FR_2_LEDs_PIN, OUTPUT);
+	digitalWrite(FR_2_LEDs_PIN, LOW);
+	pinMode(FR_1_LEDs_PWM_PIN, OUTPUT);
+	analogWrite(FR_1_LEDs_PWM_PIN, 0);
+	pinMode(FR_2_LEDs_PWM_PIN, OUTPUT);
+	analogWrite(FR_2_LEDs_PWM_PIN, 0);
+	// Fans
+	pinMode(R_Chamber_Fan_PIN, OUTPUT);
+	digitalWrite(R_Chamber_Fan_PIN, LOW);
+	pinMode(FR_Chamber_Fan_PIN, OUTPUT);
+	digitalWrite(FR_Chamber_Fan_PIN, LOW);
 
 
 	////// Initialize SD card
@@ -420,6 +466,9 @@ void setup() {
 
 	////// Start RTC
 	if (debug) { Serial.println(F("Starting RTC...")); }
+	if (!rtc.begin()) {
+		if (debug) { Serial.println(F("RTC start fail")); }
+	}
 
 
 	//////// If internet, start NTP client engine
@@ -441,6 +490,7 @@ void setup() {
 	if (!sht3x.softReset()) {
 		if (debug) { Serial.println(F("Failed to initialize Red sensor....")); }
 	}
+	
 	// Far red Chamber sensor
 	if (debug) { Serial.println(F("Starting Temp/RH sensor Far red...")); }
 	digitalWrite(I2C_Select_0_PIN, HIGH);
@@ -455,8 +505,10 @@ void setup() {
 		if (debug) { Serial.println(F("Failed to initialize Far red sensor....")); }
 	}
 
-
+	if (debug) { Serial.println(F("Setup done!")); }
 }
+
+
 
 
 
