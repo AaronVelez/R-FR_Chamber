@@ -414,32 +414,60 @@ void setup() {
 			FR_Lamp_Period_3_OFF = in["FR_Lamp_Period_3_OFF"];
 		}
 	};
-	thing["FR_LEDs_Ctrl"] << [](pson& in) {
+	thing["FR_1_LEDs_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
-			in["FR_LEDs_Manual_Ctrl"] = FR_LEDs_Manual_Ctrl;
-			in["FR_LEDs_Manual_PWM"] = FR_LEDs_Manual_PWM;
-			in["FR_LEDs_Period_1"] = FR_LEDs_Period_1;
-			in["FR_LEDs_Period_2"] = FR_LEDs_Period_2;
-			in["FR_LEDs_Period_3"] = FR_LEDs_Period_3;
-			in["FR_LEDs_Period_1_ON"] = FR_LEDs_Period_1_ON;
-			in["FR_LEDs_Period_2_ON"] = FR_LEDs_Period_2_ON;
-			in["FR_LEDs_Period_3_ON"] = FR_LEDs_Period_3_ON;
-			in["FR_LEDs_Period_1_OFF"] = FR_LEDs_Period_1_OFF;
-			in["FR_LEDs_Period_2_OFF"] = FR_LEDs_Period_2_OFF;
-			in["FR_LEDs_Period_3_OFF"] = FR_LEDs_Period_3_OFF;
+			in["FR_1_LEDs_Manual_Ctrl"] = FR_1_LEDs_Manual_Ctrl;
+			in["FR_1_LEDs_PWM_Duty_Ctrl "] = FR_1_LEDs_PWM_Duty_Ctrl;
+			in["FR_1_LEDs_Period_1"] = FR_1_LEDs_Period_1;
+			in["FR_1_LEDs_Period_2"] = FR_1_LEDs_Period_2;
+			in["FR_1_LEDs_Period_3"] = FR_1_LEDs_Period_3;
+			in["FR_1_LEDs_Period_1_ON"] = FR_1_LEDs_Period_1_ON;
+			in["FR_1_LEDs_Period_2_ON"] = FR_1_LEDs_Period_2_ON;
+			in["FR_1_LEDs_Period_3_ON"] = FR_1_LEDs_Period_3_ON;
+			in["FR_1_LEDs_Period_1_OFF"] = FR_1_LEDs_Period_1_OFF;
+			in["FR_1_LEDs_Period_2_OFF"] = FR_1_LEDs_Period_2_OFF;
+			in["FR_1_LEDs_Period_3_OFF"] = FR_1_LEDs_Period_3_OFF;
 		}
 		else {
-			FR_LEDs_Manual_Ctrl = in["FR_LEDs_Manual_Ctrl"];
-			FR_LEDs_Manual_PWM = in["FR_LEDs_Manual_PWM"];
-			FR_LEDs_Period_1 = in["FR_LEDs_Period_1"];
-			FR_LEDs_Period_2 = in["FR_LEDs_Period_2"];
-			FR_LEDs_Period_3 = in["FR_LEDs_Period_3"];
-			FR_LEDs_Period_1_ON = in["FR_LEDs_Period_1_ON"];
-			FR_LEDs_Period_2_ON = in["FR_LEDs_Period_2_ON"];
-			FR_LEDs_Period_3_ON = in["FR_LEDs_Period_3_ON"];
-			FR_LEDs_Period_1_OFF = in["FR_LEDs_Period_1_OFF"];
-			FR_LEDs_Period_2_OFF = in["FR_LEDs_Period_2_OFF"];
-			FR_LEDs_Period_3_OFF = in["FR_LEDs_Period_3_OFF"];
+			FR_1_LEDs_Manual_Ctrl = in["FR_1_LEDs_Manual_Ctrl"];
+			FR_1_LEDs_PWM_Duty_Ctrl = in["FR_1_LEDs_PWM_Duty_Ctrl"];
+			FR_1_LEDs_Period_1 = in["FR_1_LEDs_Period_1"];
+			FR_1_LEDs_Period_2 = in["FR_1_LEDs_Period_2"];
+			FR_1_LEDs_Period_3 = in["FR_1_LEDs_Period_3"];
+			FR_1_LEDs_Period_1_ON = in["FR_1_LEDs_Period_1_ON"];
+			FR_1_LEDs_Period_2_ON = in["FR_1_LEDs_Period_2_ON"];
+			FR_1_LEDs_Period_3_ON = in["FR_1_LEDs_Period_3_ON"];
+			FR_1_LEDs_Period_1_OFF = in["FR_1_LEDs_Period_1_OFF"];
+			FR_1_LEDs_Period_2_OFF = in["FR_1_LEDs_Period_2_OFF"];
+			FR_1_LEDs_Period_3_OFF = in["FR_1_LEDs_Period_3_OFF"];
+		}
+	};
+	thing["FR_2_LEDs_Ctrl"] << [](pson& in) {
+		if (in.is_empty()) {
+			in["FR_2_LEDs_Manual_Ctrl"] = FR_2_LEDs_Manual_Ctrl;
+			in["FR_2_LEDs_PWM_Duty_Ctrl "] = FR_2_LEDs_PWM_Duty_Ctrl;
+			in["FR_2_LEDs_Period_1"] = FR_2_LEDs_Period_1;
+			in["FR_2_LEDs_Period_2"] = FR_2_LEDs_Period_2;
+			in["FR_2_LEDs_Period_3"] = FR_2_LEDs_Period_3;
+			in["FR_2_LEDs_Period_1_ON"] = FR_2_LEDs_Period_1_ON;
+			in["FR_2_LEDs_Period_2_ON"] = FR_2_LEDs_Period_2_ON;
+			in["FR_2_LEDs_Period_3_ON"] = FR_2_LEDs_Period_3_ON;
+			in["FR_2_LEDs_Period_1_OFF"] = FR_2_LEDs_Period_1_OFF;
+			in["FR_2_LEDs_Period_2_OFF"] = FR_2_LEDs_Period_2_OFF;
+			in["FR_2_LEDs_Period_3_OFF"] = FR_2_LEDs_Period_3_OFF;
+		}
+		else {
+			FR_2_LEDs_Manual_Ctrl = in["FR_2_LEDs_Manual_Ctrl"];
+			FR_2_LEDs_PWM_Duty_Ctrl = in["FR_2_LEDs_PWM_Duty_Ctrl"];
+			FR_2_LEDs_Period_1 = in["FR_2_LEDs_Period_1"];
+			FR_2_LEDs_Period_2 = in["FR_2_LEDs_Period_2"];
+			FR_2_LEDs_Period_3 = in["FR_2_LEDs_Period_3"];
+			FR_2_LEDs_Period_1_ON = in["FR_2_LEDs_Period_1_ON"];
+			FR_2_LEDs_Period_2_ON = in["FR_2_LEDs_Period_2_ON"];
+			FR_2_LEDs_Period_3_ON = in["FR_2_LEDs_Period_3_ON"];
+			FR_2_LEDs_Period_1_OFF = in["FR_2_LEDs_Period_1_OFF"];
+			FR_2_LEDs_Period_2_OFF = in["FR_2_LEDs_Period_2_OFF"];
+			FR_2_LEDs_Period_3_OFF = in["FR_2_LEDs_Period_3_OFF"];
 		}
 	};
 	
