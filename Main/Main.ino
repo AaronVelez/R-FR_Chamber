@@ -206,7 +206,7 @@ unsigned int FR_Lamp_Period_3_OFF = 0;
 /// IoT control variables for FarRed LEDs
 // Circuit 1
 bool FR_1_LEDs_Manual_Ctrl = false;
-int FR_1_LEDs_Manual_PWM = 0;
+int FR_1_LEDs_PWM_Duty_Ctrl = 0;
 bool FR_1_LEDs_Period_1 = true;
 bool FR_1_LEDs_Period_2 = false;
 bool FR_1_LEDs_Period_3 = false;
@@ -218,7 +218,7 @@ unsigned int FR_1_LEDs_Period_2_OFF = 0;
 unsigned int FR_1_LEDs_Period_3_OFF = 0;
 // Circuit 2
 bool FR_2_LEDs_Manual_Ctrl = false;
-int FR_2_LEDs_Manual_PWM = 0;
+int FR_2_LEDs_PWM_Duty_Ctrl = 0;
 bool FR_2_LEDs_Period_1 = true;
 bool FR_2_LEDs_Period_2 = false;
 bool FR_2_LEDs_Period_3 = false;
@@ -238,8 +238,6 @@ bool R_Chamber_Lamp_Ctrl = false;
 bool FR_Chamber_Lamp_Ctrl = false;
 bool FR_1_LEDs_Ctrl = false;
 bool FR_2_LEDs_Ctrl = false;
-int FR_1_LEDs_PWM_Duty_Ctrl = 0;
-int FR_2_LEDs_PWM_Duty_Ctrl = 0;
 bool R_Chamber_Fan_Ctrl = false;
 bool FR_Chamber_Fan_Ctrl = false;
 /// Variables from SD card
