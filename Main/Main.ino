@@ -181,6 +181,7 @@ const int DataBucket_frq = 150;       // Data bucket update frequency in seconds
 ////// Lamps, LEDs and Fan control variables
 /// Variables for Actinic Lamp in Red Chamber
 bool R_Lamp_Manual_Ctrl = false;
+bool R_Lamp_Manual_ON = false;
 bool R_Lamp_ON = false;
 bool R_Lamp_Period_1 = true;
 bool R_Lamp_Period_2 = false;
@@ -193,6 +194,7 @@ unsigned int R_Lamp_Period_2_OFF = 0;
 unsigned int R_Lamp_Period_3_OFF = 0;
 /// Variables for Actinic Lamp in Farred Chamber
 bool FR_Lamp_Manual_Ctrl = false;
+bool FR_Lamp_Manual_ON = false;
 bool FR_Lamp_ON = false;
 bool FR_Lamp_Period_1 = true;
 bool FR_Lamp_Period_2 = false;
@@ -206,6 +208,7 @@ unsigned int FR_Lamp_Period_3_OFF = 0;
 /// Variables for FarRed LEDs
 // Circuit 1
 bool FR_1_LEDs_Manual_Ctrl = false;
+bool FR_1_LEDs_Manual_ON = false;
 bool FR_1_LEDs_ON = false;
 int FR_1_LEDs_PWM_Duty_Cycle = 0;
 bool FR_1_LEDs_Period_1 = true;
@@ -219,6 +222,7 @@ unsigned int FR_1_LEDs_Period_2_OFF = 0;
 unsigned int FR_1_LEDs_Period_3_OFF = 0;
 // Circuit 2
 bool FR_2_LEDs_Manual_Ctrl = false;
+bool FR_2_LEDs_Manual_ON = false;
 bool FR_2_LEDs_ON = false;
 int FR_2_LEDs_PWM_Duty_Cycle = 0;
 bool FR_2_LEDs_Period_1 = true;
@@ -232,8 +236,10 @@ unsigned int FR_2_LEDs_Period_2_OFF = 0;
 unsigned int FR_2_LEDs_Period_3_OFF = 0;
 /// Variables for Fans
 bool R_Fan_Manual_Ctrl = false;
+bool R_Fan_Manual_ON = false;
 bool R_Fan_ON = false;
 bool FR_Fan_Manual_Ctrl = false;
+bool FR_Fan_Manual_ON = false;
 bool FR_Fan_ON = false;
 /// Variables from SD card
 // Actinic lamps
@@ -365,7 +371,7 @@ void setup() {
 	thing["R_Lamp_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
 			in["R_Lamp_Manual_Ctrl"] = R_Lamp_Manual_Ctrl;
-			in["R_Lamp_Manual_ON"] = R_Lamp_Manual_ON;
+			in["R_Lamp_ON"] = R_Lamp_ON;
 			in["R_Lamp_Period_1"] = R_Lamp_Period_1;
 			in["R_Lamp_Period_2"] = R_Lamp_Period_2;
 			in["R_Lamp_Period_3"] = R_Lamp_Period_3;
@@ -378,7 +384,7 @@ void setup() {
 		}
 		else {
 			R_Lamp_Manual_Ctrl = in["R_Lamp_Manual_Ctrl"];
-			R_Lamp_Manual_ON = in["R_Lamp_Manual_ON"];
+			R_Lamp_ON = in["R_Lamp_ON"];
 			R_Lamp_Period_1 = in["R_Lamp_Period_1"];
 			R_Lamp_Period_2 = in["R_Lamp_Period_2"];
 			R_Lamp_Period_3 = in["R_Lamp_Period_3"];
@@ -393,7 +399,7 @@ void setup() {
 	thing["FR_Lamp_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
 			in["FR_Lamp_Manual_Ctrl"] = FR_Lamp_Manual_Ctrl;
-			in["FR_Lamp_Manual_ON"] = FR_Lamp_Manual_ON;
+			in["FR_Lamp_ON"] = FR_Lamp_ON;
 			in["FR_Lamp_Period_1"] = FR_Lamp_Period_1;
 			in["FR_Lamp_Period_2"] = FR_Lamp_Period_2;
 			in["FR_Lamp_Period_3"] = FR_Lamp_Period_3;
@@ -406,7 +412,7 @@ void setup() {
 		}
 		else {
 			FR_Lamp_Manual_Ctrl = in["FR_Lamp_Manual_Ctrl"];
-			FR_Lamp_Manual_ON = in["FR_Lamp_Manual_ON"];
+			FR_Lamp_ON = in["FR_Lamp_ON"];
 			FR_Lamp_Period_1 = in["FR_Lamp_Period_1"];
 			FR_Lamp_Period_2 = in["FR_Lamp_Period_2"];
 			FR_Lamp_Period_3 = in["FR_Lamp_Period_3"];
@@ -421,7 +427,7 @@ void setup() {
 	thing["FR_1_LEDs_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
 			in["FR_1_LEDs_Manual_Ctrl"] = FR_1_LEDs_Manual_Ctrl;
-			in["FR_1_LEDs_PWM_Duty_Ctrl "] = FR_1_LEDs_PWM_Duty_Ctrl;
+			in["FR_1_LEDs_PWM_Duty_Cycle "] = FR_1_LEDs_PWM_Duty_Cycle;
 			in["FR_1_LEDs_Period_1"] = FR_1_LEDs_Period_1;
 			in["FR_1_LEDs_Period_2"] = FR_1_LEDs_Period_2;
 			in["FR_1_LEDs_Period_3"] = FR_1_LEDs_Period_3;
@@ -434,7 +440,7 @@ void setup() {
 		}
 		else {
 			FR_1_LEDs_Manual_Ctrl = in["FR_1_LEDs_Manual_Ctrl"];
-			FR_1_LEDs_PWM_Duty_Ctrl = in["FR_1_LEDs_PWM_Duty_Ctrl"];
+			FR_1_LEDs_PWM_Duty_Cycle = in["FR_1_LEDs_PWM_Duty_Cycle"];
 			FR_1_LEDs_Period_1 = in["FR_1_LEDs_Period_1"];
 			FR_1_LEDs_Period_2 = in["FR_1_LEDs_Period_2"];
 			FR_1_LEDs_Period_3 = in["FR_1_LEDs_Period_3"];
