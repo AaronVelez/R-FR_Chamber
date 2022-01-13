@@ -179,9 +179,9 @@ const int DataBucket_frq = 150;       // Data bucket update frequency in seconds
 
 
 ////// Lamps, LEDs and Fan control variables
-/// IoT control variables for Actinic Lamp in Red Chamber
+/// Variables for Actinic Lamp in Red Chamber
 bool R_Lamp_Manual_Ctrl = false;
-bool R_Lamp_Manual_ON = false;
+bool R_Lamp_ON = false;
 bool R_Lamp_Period_1 = true;
 bool R_Lamp_Period_2 = false;
 bool R_Lamp_Period_3 = false;
@@ -191,9 +191,9 @@ unsigned int R_Lamp_Period_3_ON = 0;
 unsigned int R_Lamp_Period_1_OFF = 0;
 unsigned int R_Lamp_Period_2_OFF = 0;
 unsigned int R_Lamp_Period_3_OFF = 0;
-/// IoT control variables for Actinic Lamp in Farred Chamber
+/// Variables for Actinic Lamp in Farred Chamber
 bool FR_Lamp_Manual_Ctrl = false;
-bool FR_Lamp_Manual_ON = false;
+bool FR_Lamp_ON = false;
 bool FR_Lamp_Period_1 = true;
 bool FR_Lamp_Period_2 = false;
 bool FR_Lamp_Period_3 = false;
@@ -203,10 +203,11 @@ unsigned int FR_Lamp_Period_3_ON = 0;
 unsigned int FR_Lamp_Period_1_OFF = 0;
 unsigned int FR_Lamp_Period_2_OFF = 0;
 unsigned int FR_Lamp_Period_3_OFF = 0;
-/// IoT control variables for FarRed LEDs
+/// Variables for FarRed LEDs
 // Circuit 1
 bool FR_1_LEDs_Manual_Ctrl = false;
-int FR_1_LEDs_PWM_Duty_Ctrl = 0;
+bool FR_1_LEDs_ON = false;
+int FR_1_LEDs_PWM_Duty_Cycle = 0;
 bool FR_1_LEDs_Period_1 = true;
 bool FR_1_LEDs_Period_2 = false;
 bool FR_1_LEDs_Period_3 = false;
@@ -218,7 +219,8 @@ unsigned int FR_1_LEDs_Period_2_OFF = 0;
 unsigned int FR_1_LEDs_Period_3_OFF = 0;
 // Circuit 2
 bool FR_2_LEDs_Manual_Ctrl = false;
-int FR_2_LEDs_PWM_Duty_Ctrl = 0;
+bool FR_2_LEDs_ON = false;
+int FR_2_LEDs_PWM_Duty_Cycle = 0;
 bool FR_2_LEDs_Period_1 = true;
 bool FR_2_LEDs_Period_2 = false;
 bool FR_2_LEDs_Period_3 = false;
@@ -228,27 +230,29 @@ unsigned int FR_2_LEDs_Period_3_ON = 0;
 unsigned int FR_2_LEDs_Period_1_OFF = 0;
 unsigned int FR_2_LEDs_Period_2_OFF = 0;
 unsigned int FR_2_LEDs_Period_3_OFF = 0;
-/// IoT control variables for Fans
+/// Variables for Fans
 bool R_Fan_Manual_Ctrl = false;
-bool R_Fan_Manual_ON = false;
+bool R_Fan_ON = false;
 bool FR_Fan_Manual_Ctrl = false;
-bool FR_Fan_Manual_ON = false;
-/// RT Control variables
-bool R_Chamber_Lamp_Ctrl = false;
-bool FR_Chamber_Lamp_Ctrl = false;
-bool FR_1_LEDs_Ctrl = false;
-bool FR_2_LEDs_Ctrl = false;
-bool R_Chamber_Fan_Ctrl = false;
-bool FR_Chamber_Fan_Ctrl = false;
+bool FR_Fan_ON = false;
 /// Variables from SD card
-bool SD_R_Chamber_Lamp_Ctrl = false;
-bool SD_FR_Chamber_Lamp_Ctrl = false;
-bool SD_FR_1_LEDs_Ctrl = false;
-bool SD_FR_2_LEDs_Ctrl = false;
-int SD_FR_1_LEDs_PWM_Duty_Ctrl = 0;
-int SD_FR_2_LEDs_PWM_Duty_Ctrl = 0;
-bool SD_R_Chamber_Fan_Ctrl = false;
-bool SD_FR_Chamber_Fan_Ctrl = false;
+// Actinic lamps
+bool SD_R_Lamp_Manual_Ctrl = false;
+bool SD_R_Lamp_ON = false;
+bool SD_FR_Lamp_Manual_Ctrl = false;
+bool SD_FR_Lamp_ON = false;
+// Farred LEDs
+bool SD_FR_1_LEDs_Manual_Ctrl = false;
+bool SD_FR_1_LEDs_ON = false;
+int SD_FR_1_LEDs_PWM_Duty_Cycle = 0;
+bool SD_FR_2_LEDs_Manual_Ctrl = false;
+bool SD_FR_2_LEDs_ON = false;
+int SD_FR_2_LEDs_PWM_Duty_Cycle = 0;
+// Fans
+bool SD_R_Fan_Manual_Ctrl = false;
+bool SD_R_Chamber_Fan_ON = false;
+bool SD_R_Fan_Manual_Ctrl = false;
+bool SD_FR_Chamber_Fan_ON = false;
 
 
 ////// Measured instantaneous variables
@@ -476,15 +480,20 @@ void setup() {
 	thing["RT_RH_Red"] >> [](pson& out) { out = RH_R; };
 	thing["RT_Temp_FarRed"] >> [](pson& out) { out = Temp_FR; };
 	thing["RT_RH_FarRed"] >> [](pson& out) { out = RH_FR; };
+
+	
+
+
 	thing["Avg_Data"] >> [](pson& out) {
 		out["Time_Stamp"] = SD_local_t;
 		out["Temperature_Red_Chamber"] = TempAvg_R;
 		out["Relative_Humidity_Red_Chamber"] = RHAvg_R;
 		out["Temperature_FarRed_Chamber"] = TempAvg_FR;
 		out["Relative_Humidity_FarRed_Chamber"] = RHAvg_FR;
-		out["Red_Chamber_Lamp_ON"] = SD_R_Chamber_Lamp_ON;
-		out["FarRed_Chamber_Lamp_ON"] = SD_FR_Chamber_Lamp_ON;
-		out["FarRed_LEDs_PWM_Duty_Cycle"] = SD_FR_LEDs_PWM_Duty;
+		out["Red_Chamber_Lamp_ON"] = SD_R_Chamber_Lamp_Ctrl;
+		out["FarRed_Chamber_Lamp_ON"] = SD_FR_Chamber_Lamp_Ctrl;
+		out["FarRed_1_LEDs_PWM_Duty_Cycle"] = SD_FR_1_LEDs_PWM_Duty_Ctrl;
+		out["FarRed_2_LEDs_PWM_Duty_Cycle"] = SD_FR_2_LEDs_PWM_Duty_Ctrl;
 		out["Sensors_OK"] = SensorsOKIoT;
 	};
 
