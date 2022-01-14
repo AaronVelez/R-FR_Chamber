@@ -160,7 +160,7 @@ int yrIoT = -1;
 
 
 ////// State machine Shift Registers
-int LastSec = -1;           // Last second register (to update clock display each second)
+//int LastSec = -1;           // Last second register (to update clock display each second)
 int LastSum = -1;			// Last minute that variables were measured added to the sum for later averaging
 int SumNum = 0;				// Number of times a variable value has beed added to the sum for later averaging
 int LastLog = -1;			// Last minute that variables were loged to the SD card
@@ -170,7 +170,7 @@ time_t t_WiFiCnxTry = 0;      // Last time a (re)connection to internet happened
 const int WiFiCnx_frq = 30;  // (re)connection to internet frequency in seconds
 
 byte SensorsOK = B00000000;     // Byte variable to store real time sensor status
-byte SensorsOKAvg = B00011111;  // Byte variable to store SD card average sensor status
+byte SensorsOKAvg = B00001111;  // Byte variable to store SD card average sensor status
 int SensorsOKIoT = 0;           // Variable to send sensor status in decimal format
 
 time_t t_DataBucket = 0;             // Last time Data was sent to bucket (in UNIX time format) 
@@ -575,6 +575,7 @@ void setup() {
 	if (!sht3x.softReset()) {
 		if (debug) { Serial.println(F("Failed to initialize Far red sensor....")); }
 	}
+	digitalWrite(I2C_Select_0_PIN, LOW);
 
 	if (debug) { Serial.println(F("Setup done!")); }
 }
@@ -587,8 +588,102 @@ void setup() {
 // The loop function runs over and over again until power down or reset //
 //////////////////////////////////////////////////////////////////////////
 void loop() {
+	if (debug) { Serial.println(F("Loop start")); }
 
+
+	////// State 0. Test internet connection; if not, try to connect.
+	if (WiFi.status() != WL_CONNECTED) { WiFi.disconnect(); }
+	if (WiFi.status() != WL_CONNECTED &&
+		UTC_t - t_WiFiCnxTry > WiFiCnx_frq) {
+		Serial.println(F("Loop reconect try"));
+		WiFi.begin(ssid, password);
+
+		t_WiFiCnxTry = UTC_t;
+	}
+
+	
+	////// State 1. Keep the Iot engine runing
 	thing.handle();
+
+
+	////// State 2. Get time from RTC time
+	GetRTCTime();
+	if (debug) { Serial.println((String)"Time: " + h + ":" + m + ":" + s); }
+
+
+	////// State 3. Update RTC time from NTP server at midnight
+	if (h == 0 &&
+		m == 0 &&
+		s == 0 &&
+		UTC_t != LastNTP) {
+		GetNTPTime();
+	}
+
+
+	////// State 4. Test if it is time to read Temp, RH and Fan values
+	////// AND record sensor values for 5-minute averages (each 20 seconds)
+	if ((s % 20 == 0) && (s != LastSum)) {
+		// Read Red chamber sensor
+		digitalWrite(I2C_Select_0_PIN, LOW);
+		sht3x_data = sht3x.readTemperatureAndHumidity(sht3x.eRepeatability_High);
+		if (sht3x_data.ERR == 0) {
+			Temp_R = sht3x_data.TemperatureC;
+			RH_R = sht3x_data.Humidity;
+			bitWrite(SensorsOK, 0, 1);
+			bitWrite(SensorsOK, 1, 1);
+		}
+		else {
+			Temp = -1;
+			RH = -1;
+			bitWrite(SensorsOK, 0, 0);
+			bitWrite(SensorsOK, 1, 0);
+		}
+
+		// Read Farred chamber sensor
+		digitalWrite(I2C_Select_0_PIN, HIGH);
+		sht3x_data = sht3x.readTemperatureAndHumidity(sht3x.eRepeatability_High);
+		if (sht3x_data.ERR == 0) {
+			Temp_FR = sht3x_data.TemperatureC;
+			RH_FR = sht3x_data.Humidity;
+			bitWrite(SensorsOK, 2, 1);
+			bitWrite(SensorsOK, 3, 1);
+		}
+		else {
+			Temp = -1;
+			RH = -1;
+			bitWrite(SensorsOK, 2, 0);
+			bitWrite(SensorsOK, 3, 0);
+		}
+		digitalWrite(I2C_Select_0_PIN, LOW);
+		
+		// Record if sensor reads were OK
+		SensorsOKAvg = SensorsOKAvg & SensorsOK;
+		if ( debug && (!bitRead(SensorsOK, 0) || !bitRead(SensorsOK, 1) || !bitRead(SensorsOK, 2) || !bitRead(SensorsOK, 3)) ) {
+			Serial.println(F("At least 1 sensor read failed"));
+			Serial.print(F("SensorOK byte: "));
+			Serial.println(SensorsOK, BIN);
+			Serial.print(F("R_Temp: "));
+			Serial.println(Temp_R);
+			Serial.print(F("R_RH: "));
+			Serial.println(RH_R);
+			Serial.print(F("FR_Temp: "));
+			Serial.println(Temp_FR);
+			Serial.print(F("FR_RH: "));
+			Serial.println(RH_FR);
+		}
+
+		// Add new values to sum
+		TempSum_R += Temp_R;
+		RHSum_R += RH_R;
+		TempSum_FR += Temp_FR;
+		RHSum_FR += RH_FR;
+		R_Fan_ON_Sum += (int)R_Fan_ON;
+		FR_Fan_ON_Sum += (int)FR_Fan_ON;
+
+		// Update Shift registers
+		LastSum = m;
+		SumNum += 1;
+	}
 
 
 	delay(1000);
