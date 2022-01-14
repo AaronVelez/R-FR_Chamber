@@ -140,7 +140,7 @@ float sum = 0; // shift register to hold ADC data
 
 
 ////// Time variables
-//DateTime RTCnow;    // UTC Date-Time class from RTC DS3231 (not used here)
+DateTime RTCnow;    // UTC Date-Time class from RTClib
 time_t LastNTP;     // Last UTP time that the RTC was updated form NTP
 time_t UTC_t;       // UTC UNIX time stamp
 time_t local_t;     // Local time with DST adjust in UNIX time stamp format
@@ -529,11 +529,22 @@ void setup() {
 	if (!rtc.begin()) {
 		if (debug) { Serial.println(F("RTC start fail")); }
 	}
-
+	
 
 	//////// If internet, start NTP client engine
 	//////// and update RTC and system time
 	//////// If no internet, get time form RTC
+	if (debug) { Serial.println(F("Starting NTP client engine...")); }
+	timeClient.begin();
+	Serial.print(F("Trying to update NTP time..."));
+	if (!GetNTPTime()) {
+		GetRTCTime();
+		Serial.println(F("\nTime updated from RTC"));
+	}
+	else { Serial.println(F("\nTime updated from NTP")); }
+
+
+
 
 
 	////// Start SHT31 Temp and RH sensor

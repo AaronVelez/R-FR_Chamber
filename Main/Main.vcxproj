@@ -110,6 +110,7 @@
     <None Include="Main.ino">
       <FileType>CppCode</FileType>
     </None>
+    <None Include="Time Functions.ino" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.Main.vsarduino.h" />
