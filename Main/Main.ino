@@ -1,7 +1,7 @@
 /*
  Name:		Main.ino
  Created:	12/14/2021 10:19:58 PM
- Authors:	Aarón I. Vélez Ramírez and Irving J. García López
+ Authors:	Aarï¿½n I. Vï¿½lez Ramï¿½rez and Irving J. Garcï¿½a Lï¿½pez
 */
 
 
@@ -11,15 +11,15 @@
 //////////
 // Pins //
 //////////
+// Pins 11, 12 and 13 are used for WiFi feather wing
 const int SD_CS_PIN = 10;				// SD on Addlogger M0 Feather 
-const int R_Chamber_Lamp_PIN = 16;		// Power Actinic Lamp in Red chamber
-const int FR_Chamber_Lamp_PIN = 17;		// Power Actinic Lamp in Farred chamber
-const int I2C_Select_0_PIN = 18;		// I2C multiplexer digital select line
-const int I2C_Select_1_PIN = 19;		// I2C multiplexer digital select line
-const int FR_1_LEDs_PIN = 9;			// Power Farred LEDs, circuit 1
-const int FR_2_LEDs_PIN = 11;			// Power Farred LEDs, circuit 2
-const int FR_1_LEDs_PWM_PIN = 12;		// PWM  line to dim FarRed LEDs, circuit 1
-const int FR_2_LEDs_PWM_PIN = 13;		// PWM  line to dim FarRed LEDs, circuit 2
+const int R_Chamber_Lamp_PIN = 14;		// Power Actinic Lamp in Red chamber
+const int FR_Chamber_Lamp_PIN = 15;		// Power Actinic Lamp in Farred chamber
+const int I2C_Select_0_PIN = 9;		// I2C multiplexer digital select line
+const int FR_1_LEDs_PIN = 16;			// Power Farred LEDs, circuit 1
+const int FR_2_LEDs_PIN = 17;			// Power Farred LEDs, circuit 2
+const int FR_1_LEDs_PWM_PIN = 18;		// PWM  line to dim FarRed LEDs, circuit 1
+const int FR_2_LEDs_PWM_PIN = 19;		// PWM  line to dim FarRed LEDs, circuit 2
 const int R_Chamber_Fan_PIN = 5;		// Power Fan in Red Chamber
 const int FR_Chamber_Fan_PIN = 6;		// Power Fan in Farred Chamber
 
@@ -57,13 +57,11 @@ WiFiUDP ntpUDP;
 
 
 ////// Iot Thinger
+#define THINGER_SERIAL_DEBUG		// Uncomment for debugging connection to Thinger
 #define THINGER_SERVER iot_server   // Delete this line if using a free thinger account 
-#define _DEBUG_   // Uncomment for debugging connection to Thinger
-#define _DISABLE_TLS_     // Uncoment if needed (port 25202 closed, for example)
-//#include <ThingerESP32.h>
-//ThingerESP32 thing(iot_user, iot_device, iot_credential);
-#include <ThingerWifi.h>
-ThingerWifi thing(iot_user, iot_device, iot_credential);
+//#define _DISABLE_TLS_				// Uncoment if needed (port 25202 closed, for example)
+#include <ThingerWiFiNINA.h>
+ThingerWiFiNINA thing(iot_user, iot_device, iot_credential);
 /// <summary>
 /// IMPORTANT
 /// in file \thinger.io\src\ThingerClient.h at Line 355, the function handle_connection() was modified
@@ -72,7 +70,7 @@ ThingerWifi thing(iot_user, iot_device, iot_credential);
 /// </summary>
 
 
-////// SD fat linrary used in order to use exFAT file system
+////// SD fat library used in order to use exFAT file system
 #include <SdFat.h>
 const int SD_FAT_TYPE = 2;	// SD_FAT_TYPE = 2 for exFAT
 const int SD_SCK_MHZ = 10;	// it works till 12 MHz in M0 board
@@ -114,8 +112,8 @@ DFRobot_SHT3x::sRHAndTemp_t sht3x_data;
 
 ////// Station IDs & Constants
 const int StaNum = 7;
-String StaType = F("M0_WiFiNA_Thinger");
-String StaName = F("R-FR Chamber CINVESTAV");
+String StaType = F("M0_WiFiNA_RTC-PCF8523_Thinger");
+String StaName = F("R-FR Chamber LANGEBIO");
 String Firmware = F("v1.0.0");
 //const float VRef = 3.3;
 bool debug = true;
@@ -123,14 +121,15 @@ bool debug = true;
 
 ////// Log File & Headers
 String FileName = "";
-const String Headers = F("UNIX_t\tyear\tmonth\tday\thour\tminute\tsecond\t\
-AirTemp\tAirRH\t\
-SoilVWC\tSoilTemp\tSoilEC\t\
-LeafWetV\t\
-DownThermocoupleV\tDownSapTemp\tUpThermocoupleV\tUpSapTemp\tSapFlow\t\
-DendrometerV\tStemRadious\t\
-ADCTemp\t\
-SentLoRa");
+const String Headers = F("UTC_UNIX_t\tLocal_UNIX_t\tyear\tmonth\tday\thour\tminute\tsecond\t\
+R_AirTemp\tR_AirRH\t\
+FR_AirTemp\tFR_AirRH\t\
+R_Actinic_ON\tFR_Actinic_ON\t\
+R_Fan_ON\tFR_Fan_ON\t\
+FR_1_LEDs_ON\tFR_2_LEDs_ON\t\
+FR_1_LEDs_PWM\tFR_2_LEDs_PWM\t\
+SensorsOK\t\
+SentIoT");
 const int HeaderN = 21;	// cero indexed
 String LogString = "";
 
@@ -257,7 +256,7 @@ int SD_FR_2_LEDs_PWM_Duty_Cycle = 0;
 // Fans
 bool SD_R_Fan_Manual_Ctrl = false;
 bool SD_R_Chamber_Fan_ON = false;
-bool SD_R_Fan_Manual_Ctrl = false;
+bool SD_FR_Fan_Manual_Ctrl = false;
 bool SD_FR_Chamber_Fan_ON = false;
 
 
@@ -273,6 +272,8 @@ double TempSum_R = 0;
 double RHSum_R = 0;
 double TempSum_FR = 0;
 double RHSum_FR = 0;
+double R_Fan_ON_Sum = 0;
+double FR_Fan_ON_Sum = 0;
 
 
 ////// Values to be logged. They will be the average over the last 5 minutes
@@ -280,7 +281,8 @@ float TempAvg_R = 0;
 float RHAvg_R = 0;
 float TempAvg_FR = 0;
 float RHAvg_FR = 0;
-
+float R_Fan_ON_Avg = 0;
+float FR_Fan_ON_Avg = 0;
 
 
 
@@ -293,7 +295,7 @@ float RHAvg_FR = 0;
 void setup() {
 
 	////// Start General Libraries
-	Serial.begin(115200);
+	Serial.begin(9600);
 	delay(2500);
 	if (debug = true) { Serial.print(F("\nSetup start\n")); }
 	Wire.begin();
@@ -312,6 +314,8 @@ void setup() {
 		}
 		else {
 			Serial.println(F("\nConnected to internet!"));
+			Serial.print(F("IP address: "));
+			Serial.println(WiFi.localIP());
 			break;
 		}
 		if (i == 10) {
@@ -319,7 +323,7 @@ void setup() {
 			WiFi.disconnect();  // if no internet, disconnect. This prevents the board to be busy only trying to connect.
 		}
 	}
-
+	
 
 	////// Set pin modes of pins not associated with libraries
 	//analogReadResolution(12);
@@ -331,8 +335,6 @@ void setup() {
 	//I2C multiplexer
 	pinMode(I2C_Select_0_PIN, OUTPUT);
 	digitalWrite(I2C_Select_0_PIN, LOW);
-	pinMode(I2C_Select_1_PIN, OUTPUT);
-	digitalWrite(I2C_Select_1_PIN, LOW);
 	// Farred LEDs
 	pinMode(FR_1_LEDs_PIN, OUTPUT);
 	digitalWrite(FR_1_LEDs_PIN, LOW);
@@ -358,7 +360,7 @@ void setup() {
 	LogString.reserve(HeaderN * 7);
 	str.reserve(HeaderN * 7);
 
-
+	
 	////// Configure IoT
 	if (debug) { Serial.println(F("Configuring IoT...")); }
 	thing.add_wifi(ssid, password);
@@ -371,7 +373,7 @@ void setup() {
 	thing["R_Lamp_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
 			in["R_Lamp_Manual_Ctrl"] = R_Lamp_Manual_Ctrl;
-			in["R_Lamp_ON"] = R_Lamp_ON;
+			in["R_Lamp_Manual_ON"] = R_Lamp_Manual_ON;
 			in["R_Lamp_Period_1"] = R_Lamp_Period_1;
 			in["R_Lamp_Period_2"] = R_Lamp_Period_2;
 			in["R_Lamp_Period_3"] = R_Lamp_Period_3;
@@ -384,7 +386,7 @@ void setup() {
 		}
 		else {
 			R_Lamp_Manual_Ctrl = in["R_Lamp_Manual_Ctrl"];
-			R_Lamp_ON = in["R_Lamp_ON"];
+			R_Lamp_Manual_ON = in["R_Lamp_Manual_ON"];
 			R_Lamp_Period_1 = in["R_Lamp_Period_1"];
 			R_Lamp_Period_2 = in["R_Lamp_Period_2"];
 			R_Lamp_Period_3 = in["R_Lamp_Period_3"];
@@ -399,7 +401,7 @@ void setup() {
 	thing["FR_Lamp_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
 			in["FR_Lamp_Manual_Ctrl"] = FR_Lamp_Manual_Ctrl;
-			in["FR_Lamp_ON"] = FR_Lamp_ON;
+			in["FR_Lamp_Manual_ON"] = FR_Lamp_Manual_ON;
 			in["FR_Lamp_Period_1"] = FR_Lamp_Period_1;
 			in["FR_Lamp_Period_2"] = FR_Lamp_Period_2;
 			in["FR_Lamp_Period_3"] = FR_Lamp_Period_3;
@@ -412,7 +414,7 @@ void setup() {
 		}
 		else {
 			FR_Lamp_Manual_Ctrl = in["FR_Lamp_Manual_Ctrl"];
-			FR_Lamp_ON = in["FR_Lamp_ON"];
+			FR_Lamp_Manual_ON = in["FR_Lamp_Manual_ON"];
 			FR_Lamp_Period_1 = in["FR_Lamp_Period_1"];
 			FR_Lamp_Period_2 = in["FR_Lamp_Period_2"];
 			FR_Lamp_Period_3 = in["FR_Lamp_Period_3"];
@@ -427,6 +429,7 @@ void setup() {
 	thing["FR_1_LEDs_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
 			in["FR_1_LEDs_Manual_Ctrl"] = FR_1_LEDs_Manual_Ctrl;
+			in["FR_1_LEDs_Manual_ON"] = FR_1_LEDs_Manual_ON;
 			in["FR_1_LEDs_PWM_Duty_Cycle "] = FR_1_LEDs_PWM_Duty_Cycle;
 			in["FR_1_LEDs_Period_1"] = FR_1_LEDs_Period_1;
 			in["FR_1_LEDs_Period_2"] = FR_1_LEDs_Period_2;
@@ -440,6 +443,7 @@ void setup() {
 		}
 		else {
 			FR_1_LEDs_Manual_Ctrl = in["FR_1_LEDs_Manual_Ctrl"];
+			FR_1_LEDs_Manual_ON = in["FR_1_LEDs_Manual_ON"];
 			FR_1_LEDs_PWM_Duty_Cycle = in["FR_1_LEDs_PWM_Duty_Cycle"];
 			FR_1_LEDs_Period_1 = in["FR_1_LEDs_Period_1"];
 			FR_1_LEDs_Period_2 = in["FR_1_LEDs_Period_2"];
@@ -455,7 +459,8 @@ void setup() {
 	thing["FR_2_LEDs_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
 			in["FR_2_LEDs_Manual_Ctrl"] = FR_2_LEDs_Manual_Ctrl;
-			in["FR_2_LEDs_PWM_Duty_Ctrl "] = FR_2_LEDs_PWM_Duty_Ctrl;
+			in["FR_2_LEDs_Manual_ON"] = FR_2_LEDs_Manual_ON;
+			in["FR_2_LEDs_PWM_Duty_Cycle "] = FR_2_LEDs_PWM_Duty_Cycle;
 			in["FR_2_LEDs_Period_1"] = FR_2_LEDs_Period_1;
 			in["FR_2_LEDs_Period_2"] = FR_2_LEDs_Period_2;
 			in["FR_2_LEDs_Period_3"] = FR_2_LEDs_Period_3;
@@ -468,7 +473,8 @@ void setup() {
 		}
 		else {
 			FR_2_LEDs_Manual_Ctrl = in["FR_2_LEDs_Manual_Ctrl"];
-			FR_2_LEDs_PWM_Duty_Ctrl = in["FR_2_LEDs_PWM_Duty_Ctrl"];
+			FR_2_LEDs_Manual_ON = in["FR_2_LEDs_Manual_ON"];
+			FR_2_LEDs_PWM_Duty_Cycle = in["FR_2_LEDs_PWM_Duty_Cycle"];
 			FR_2_LEDs_Period_1 = in["FR_2_LEDs_Period_1"];
 			FR_2_LEDs_Period_2 = in["FR_2_LEDs_Period_2"];
 			FR_2_LEDs_Period_3 = in["FR_2_LEDs_Period_3"];
@@ -482,27 +488,40 @@ void setup() {
 	};
 	
 	// Define output resources
+	thing["RT_R_Lamp_ON"] >> [](pson& out) { out = R_Lamp_ON; };
+	thing["RT_FR_Lamp_ON"] >> [](pson& out) { out = FR_Lamp_ON; };
+	thing["RT_FR_1_LEDs_ON"] >> [](pson& out) { out = FR_1_LEDs_ON; };
+	thing["RT_FR_2_LEDs_ON"] >> [](pson& out) { out = FR_2_LEDs_ON; };
+	thing["RT_R_Fan_ON "] >> [](pson& out) { out = R_Fan_ON; };
+	thing["RT_FR_Fan_ON "] >> [](pson& out) { out = FR_Fan_ON; };
 	thing["RT_Temp_Red"] >> [](pson& out) { out = Temp_R; };
 	thing["RT_RH_Red"] >> [](pson& out) { out = RH_R; };
 	thing["RT_Temp_FarRed"] >> [](pson& out) { out = Temp_FR; };
 	thing["RT_RH_FarRed"] >> [](pson& out) { out = RH_FR; };
-
 	
-
-
 	thing["Avg_Data"] >> [](pson& out) {
 		out["Time_Stamp"] = SD_local_t;
+		out["Red_Chamber_Lamp_Manual_Ctrl"] = SD_R_Lamp_Manual_Ctrl;
+		out["Red_Chamber_Lamp_ON"] = SD_R_Lamp_ON;
+		out["FarRed_Chamber_Lamp_Manual_Ctrl"] = SD_FR_Lamp_Manual_Ctrl;
+		out["FarRed_Chamber_Lamp_ON"] = SD_FR_Lamp_ON;
+		out["FarRed_1_LEDs_Manual_Ctrl"] = SD_FR_1_LEDs_Manual_Ctrl;
+		out["FarRed_1_LEDs_ON"] = SD_FR_1_LEDs_ON;
+		out["FarRed_1_LEDs_PWM_Duty_Cycle"] = SD_FR_1_LEDs_PWM_Duty_Cycle;
+		out["FarRed_2_LEDs_Manual_Ctrl"] = SD_FR_2_LEDs_Manual_Ctrl;
+		out["FarRed_2_LEDs_ON"] = SD_FR_2_LEDs_ON;
+		out["FarRed_2_LEDs_PWM_Duty_Cycle"] = SD_FR_2_LEDs_PWM_Duty_Cycle;
+		out["Red_Chamber_Fan_Manual_Ctrl"] = SD_R_Fan_Manual_Ctrl;
+		out["Red_Chamber_Chamber_Fan_ON"] = SD_R_Chamber_Fan_ON;
+		out["FarRed_Chamber_Fan_Manual_Ctrl"] = SD_FR_Fan_Manual_Ctrl;
+		out["Red_Chamber_Chamber_Fan_ON"] = SD_FR_Chamber_Fan_ON;
 		out["Temperature_Red_Chamber"] = TempAvg_R;
 		out["Relative_Humidity_Red_Chamber"] = RHAvg_R;
 		out["Temperature_FarRed_Chamber"] = TempAvg_FR;
 		out["Relative_Humidity_FarRed_Chamber"] = RHAvg_FR;
-		out["Red_Chamber_Lamp_ON"] = SD_R_Chamber_Lamp_Ctrl;
-		out["FarRed_Chamber_Lamp_ON"] = SD_FR_Chamber_Lamp_Ctrl;
-		out["FarRed_1_LEDs_PWM_Duty_Cycle"] = SD_FR_1_LEDs_PWM_Duty_Ctrl;
-		out["FarRed_2_LEDs_PWM_Duty_Cycle"] = SD_FR_2_LEDs_PWM_Duty_Ctrl;
 		out["Sensors_OK"] = SensorsOKIoT;
 	};
-
+	
 	
 
 	////// Start RTC
@@ -558,4 +577,28 @@ void setup() {
 //////////////////////////////////////////////////////////////////////////
 void loop() {
 
+	thing.handle();
+
+
+	delay(1000);
+	printWifiStatus();
+
+
+}
+
+void printWifiStatus() {
+	// print the SSID of the network you're attached to:
+	Serial.print("SSID: ");
+	Serial.println(WiFi.SSID());
+
+	// print your board's IP address:
+	IPAddress ip = WiFi.localIP();
+	Serial.print("IP Address: ");
+	Serial.println(ip);
+
+	// print the received signal strength:
+	long rssi = WiFi.RSSI();
+	Serial.print("signal strength (RSSI):");
+	Serial.print(rssi);
+	Serial.println(" dBm");
 }
