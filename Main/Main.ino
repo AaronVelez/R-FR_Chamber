@@ -745,38 +745,51 @@ void loop() {
 
 	////// State 5. PID control over Temp or RH.
 	////// As Fan control is a relay, the PID output is transformed into a "control window" ON time percentage
-	// Test if it is time to shift control window
+	/// Test if it is time to shift control window
 	if (local_t - windowStartTime > WindowSize) {
 		windowStartTime = local_t;
 	}
-	// Execute PID algorithms
-	if (Temp_Ctrl) {
-		// PID control over temperature
-		R_Temp_PID.Compute();
-		FR_Temp_PID.Compute();
+	/// Red Chamber Fan control
+	if (R_Fan_Manual_Ctrl) {
+		R_Temp_PID.SetMode(MANUAL);
+		R_RH_PID.SetMode(MANUAL);
+		digitalWrite(R_Chamber_Fan_PIN, R_Fan_Manual_ON);
+		R_Fan_ON = R_Fan_Manual_ON;
 	}
 	else {
-		// PID control over Relative Humidity
-		R_RH_PID.Compute();
-		FR_RH_PID.Compute();
+		// Execute PID algorithms
+		if (Temp_Ctrl) { R_Temp_PID.Compute(); }
+		else { R_RH_PID.Compute(); }
+		// Execute PID output for Red chamber
+		if (local_t - windowStartTime < R_Fan_ON_t) {
+			digitalWrite(R_Chamber_Fan_PIN, HIGH);
+			R_Fan_ON = true;
+		}
+		else {
+			digitalWrite(R_Chamber_Fan_PIN, LOW);
+			R_Fan_ON = false;
+		}
 	}
-	// Execute PID output for Red chamber
-	if (local_t - windowStartTime < R_Fan_ON_t) {
-		digitalWrite(R_Chamber_Fan_PIN, HIGH);
-		R_Fan_ON = true;
+	/// Farred Chamber Fan control
+	if (FR_Fan_Manual_Ctrl) {
+		FR_Temp_PID.SetMode(MANUAL);
+		FR_RH_PID.SetMode(MANUAL);
+		digitalWrite(FR_Chamber_Fan_PIN, FR_Fan_Manual_ON);
+		FR_Fan_ON = FR_Fan_Manual_ON;
 	}
 	else {
-		digitalWrite(R_Chamber_Fan_PIN, LOW);
-		R_Fan_ON = false;
-	}
-	// Execute PID output for Farred chamber
-	if (local_t - windowStartTime < FR_Fan_ON_t) {
-		digitalWrite(FR_Chamber_Fan_PIN, HIGH);
-		FR_Fan_ON = true;
-	}
-	else {
-		digitalWrite(FR_Chamber_Fan_PIN, LOW);
-		FR_Fan_ON = false;
+		// Execute PID algorithms
+		if (Temp_Ctrl) { FR_Temp_PID.Compute(); }
+		else { FR_RH_PID.Compute(); }
+		// Execute PID output for Farred chamber
+		if (local_t - windowStartTime < FR_Fan_ON_t) {
+			digitalWrite(FR_Chamber_Fan_PIN, HIGH);
+			FR_Fan_ON = true;
+		}
+		else {
+			digitalWrite(FR_Chamber_Fan_PIN, LOW);
+			FR_Fan_ON = false;
+		}
 	}
 
 
