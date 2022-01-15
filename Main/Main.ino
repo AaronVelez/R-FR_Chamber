@@ -102,6 +102,11 @@ DFRobot_SHT3x sht3x(&Wire,/*address=*/0x44,/*RST=*/4); // secondary I2C address 
 DFRobot_SHT3x::sRHAndTemp_t sht3x_data;
 
 
+////// PID library
+#include <PID_v1.h>
+
+
+
 
 
 
@@ -204,6 +209,12 @@ unsigned int FR_Lamp_Period_3_ON = 0;
 unsigned int FR_Lamp_Period_1_OFF = 0;
 unsigned int FR_Lamp_Period_2_OFF = 0;
 unsigned int FR_Lamp_Period_3_OFF = 0;
+/// Variables for environmental control
+bool Temp_Ctrl = true;	// If false, control is over Relative humidity
+double R_Temp_Set = 20;
+double FR_Temp_Set = 20;
+double R_RH_Set = 70;
+double FR_RH_Set = 70;
 /// Variables for FarRed LEDs
 // Circuit 1
 bool FR_1_LEDs_Manual_Ctrl = false;
@@ -236,9 +247,11 @@ unsigned int FR_2_LEDs_Period_3_OFF = 0;
 /// Variables for Fans
 bool R_Fan_Manual_Ctrl = false;
 bool R_Fan_Manual_ON = false;
+double R_Fan_ON_t = 0;
 bool R_Fan_ON = false;
 bool FR_Fan_Manual_Ctrl = false;
 bool FR_Fan_Manual_ON = false;
+double FR_Fan_ON_t = 0;
 bool FR_Fan_ON = false;
 /// Variables from SD card
 // Actinic lamps
@@ -261,10 +274,10 @@ bool SD_FR_Chamber_Fan_ON = false;
 
 
 ////// Measured instantaneous variables
-float Temp_R = -1;        // Air temperature RED chamber
-float RH_R = -1;          // Air RH value RED chamber
-float Temp_FR = -1;        // Air temperature FARRED chamber 
-float RH_FR = -1;          // Air RH value FARRED chamber
+double Temp_R = -1;        // Air temperature RED chamber
+double RH_R = -1;          // Air RH value RED chamber
+double Temp_FR = -1;        // Air temperature FARRED chamber 
+double RH_FR = -1;          // Air RH value FARRED chamber
 
 
 ////// Variables to store sum for eventual averaging
@@ -285,9 +298,18 @@ float R_Fan_ON_Avg = 0;
 float FR_Fan_ON_Avg = 0;
 
 
+////// PID variables and controls
+int WindowSize = 300;		// Windows size in seconds. Each n seconds the PID sets how much of that time the fan is ON, remainder is OFF. There is a minimum ON time set in setup
+time_t windowStartTime = 0;
 
+const float Kp = 2; // 
+const float Ki = 5; //
+const float Kd = 1; //
 
-
+PID R_Temp_PID(&Temp_R, &R_Fan_ON_t, &R_Temp_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
+PID FR_Temp_PID(&Temp_FR, &FR_Fan_ON_t, &FR_Temp_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
+PID R_RH_PID(&RH_R, &R_Fan_ON_t, &R_RH_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
+PID FR_RH_PID(&RH_FR, &FR_Fan_ON_t, &FR_RH_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
 
 //////////////////////////////////////////////////////////////////////////
 // the setup function runs once when you press reset or power the board //
@@ -426,6 +448,28 @@ void setup() {
 			FR_Lamp_Period_3_OFF = in["FR_Lamp_Period_3_OFF"];
 		}
 	};
+	thing["Env_Ctrl"] << [](pson& in) {
+		if (in.is_empty()) {
+			in["Temp_Ctrl"] = Temp_Ctrl;
+			in["R_Temp_Set"] = R_Temp_Set;
+			in["FR_Temp_Set"] = FR_Temp_Set;
+			in["R_RH_Set"] = R_RH_Set;
+			in["FR_RH_Set"] = FR_RH_Set;
+			in["R_Fan_ON"] = R_Fan_ON;
+			in["FR_Fan_ON"] = FR_Fan_ON;
+
+		}
+		else {
+			Temp_Ctrl = in["Temp_Ctrl"];
+			R_Temp_Set = in["R_Temp_Set"];
+			FR_Temp_Set = in["FR_Temp_Set"];
+			R_RH_Set = in["R_RH_Set"];
+			FR_RH_Set = in["FR_RH_Set"];
+			R_Fan_ON = in["R_Fan_ON"];
+			FR_Fan_ON = in["FR_Fan_ON"];
+
+		}
+	};
 	thing["FR_1_LEDs_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
 			in["FR_1_LEDs_Manual_Ctrl"] = FR_1_LEDs_Manual_Ctrl;
@@ -529,6 +573,12 @@ void setup() {
 	if (!rtc.begin()) {
 		if (debug) { Serial.println(F("RTC start fail")); }
 	}
+
+
+	////// Update time from NTP or RTC if WiFi not available
+	if (!GetNTPTime()) {
+		GetRTCTime();
+	}
 	
 
 	//////// If internet, start NTP client engine
@@ -542,9 +592,6 @@ void setup() {
 		Serial.println(F("\nTime updated from RTC"));
 	}
 	else { Serial.println(F("\nTime updated from NTP")); }
-
-
-
 
 
 	////// Start SHT31 Temp and RH sensor
@@ -576,6 +623,16 @@ void setup() {
 		if (debug) { Serial.println(F("Failed to initialize Far red sensor....")); }
 	}
 	digitalWrite(I2C_Select_0_PIN, LOW);
+
+
+	////// Start PIDs
+	windowStartTime = local_t;
+	// Set a minimum ON Fan time of 150 seconds
+	R_Temp_PID.SetOutputLimits(150, WindowSize);
+	FR_Temp_PID.SetOutputLimits(150, WindowSize);
+	R_RH_PID.SetOutputLimits(150, WindowSize);
+	FR_RH_PID.SetOutputLimits(150, WindowSize);
+
 
 	if (debug) { Serial.println(F("Setup done!")); }
 }
@@ -633,8 +690,8 @@ void loop() {
 			bitWrite(SensorsOK, 1, 1);
 		}
 		else {
-			Temp = -1;
-			RH = -1;
+			Temp_R = -1;
+			RH_R = -1;
 			bitWrite(SensorsOK, 0, 0);
 			bitWrite(SensorsOK, 1, 0);
 		}
@@ -649,8 +706,8 @@ void loop() {
 			bitWrite(SensorsOK, 3, 1);
 		}
 		else {
-			Temp = -1;
-			RH = -1;
+			Temp_FR = -1;
+			RH_FR = -1;
 			bitWrite(SensorsOK, 2, 0);
 			bitWrite(SensorsOK, 3, 0);
 		}
@@ -686,6 +743,48 @@ void loop() {
 	}
 
 
+	////// State 5. PID control over Temp or RH.
+	////// As Fan control is a relay, the PID output is transformed into a "control window" ON time percentage
+	// Test if it is time to shift control window
+	if (local_t - windowStartTime > WindowSize) {
+		windowStartTime = local_t;
+	}
+	// Execute PID algorithms
+	if (Temp_Ctrl) {
+		// PID control over temperature
+		R_Temp_PID.Compute();
+		FR_Temp_PID.Compute();
+	}
+	else {
+		// PID control over Relative Humidity
+		R_RH_PID.Compute();
+		FR_RH_PID.Compute();
+	}
+	// Execute PID output for Red chamber
+	if (local_t - windowStartTime < R_Fan_ON_t) {
+		digitalWrite(R_Chamber_Fan_PIN, HIGH);
+		R_Fan_ON = true;
+	}
+	else {
+		digitalWrite(R_Chamber_Fan_PIN, LOW);
+		R_Fan_ON = false;
+	}
+	// Execute PID output for Farred chamber
+	if (local_t - windowStartTime < FR_Fan_ON_t) {
+		digitalWrite(FR_Chamber_Fan_PIN, HIGH);
+		FR_Fan_ON = true;
+	}
+	else {
+		digitalWrite(FR_Chamber_Fan_PIN, LOW);
+		FR_Fan_ON = false;
+	}
+
+
+
+	
+
+
+
 	delay(1000);
 	printWifiStatus();
 
@@ -708,3 +807,8 @@ void printWifiStatus() {
 	Serial.print(rssi);
 	Serial.println(" dBm");
 }
+
+
+
+
+

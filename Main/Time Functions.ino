@@ -14,7 +14,7 @@ bool GetNTPTime() {
         if (debug) {
             Serial.println(F("NTP client update success!"));
             Serial.print(F("UTC time from NTP is: "));
-            Serial.println(UTC_t);
+            Serial.println( (unsigned long)UTC_t );
         }
         return true;
     }
