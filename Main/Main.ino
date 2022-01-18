@@ -632,6 +632,11 @@ void setup() {
 	FR_Temp_PID.SetOutputLimits(150, WindowSize);
 	R_RH_PID.SetOutputLimits(150, WindowSize);
 	FR_RH_PID.SetOutputLimits(150, WindowSize);
+	// Turn PID ON
+	R_Temp_PID.SetMode(AUTOMATIC);
+	R_RH_PID.SetMode(AUTOMATIC);
+	FR_Temp_PID.SetMode(AUTOMATIC);
+	FR_RH_PID.SetMode(AUTOMATIC);
 
 
 	if (debug) { Serial.println(F("Setup done!")); }
@@ -751,8 +756,6 @@ void loop() {
 	}
 	/// Red Chamber Fan control
 	if (R_Fan_Manual_Ctrl) {
-		R_Temp_PID.SetMode(MANUAL);
-		R_RH_PID.SetMode(MANUAL);
 		digitalWrite(R_Chamber_Fan_PIN, R_Fan_Manual_ON);
 		R_Fan_ON = R_Fan_Manual_ON;
 	}
@@ -772,8 +775,6 @@ void loop() {
 	}
 	/// Farred Chamber Fan control
 	if (FR_Fan_Manual_Ctrl) {
-		FR_Temp_PID.SetMode(MANUAL);
-		FR_RH_PID.SetMode(MANUAL);
 		digitalWrite(FR_Chamber_Fan_PIN, FR_Fan_Manual_ON);
 		FR_Fan_ON = FR_Fan_Manual_ON;
 	}
@@ -794,6 +795,80 @@ void loop() {
 
 
 
+	////// State 6. Set IoT Control over Lamps and LEDs
+
+
+
+
+
+	////// State 7. Test if it is time to compute  averages and record in SD card (each 5 minutes)
+	if (((m % 5) == 0) && (m != LastLog) && (SumNum > 0)) {
+		// Calculate averages
+		TempAvg_R = TempSum_R / SumNum;
+		RHAvg_R = RHSum_R / SumNum;
+		TempAvg_FR = TempSum_FR / SumNum;
+		RHAvg_FR = RHSum_FR / SumNum;
+		R_Fan_ON_Avg = R_Fan_ON_Sum / SumNum;
+		FR_Fan_ON_Avg = FR_Fan_ON_Sum / SumNum;
+
+
+		// Open Year LogFile (create if not available)
+		FileName = (String)yr + ".txt";
+		if (!LogFile.exists(FileName)) {
+			LogFile.open((FileName), O_RDWR | O_CREAT); // Create file
+
+			// Add Metadata
+			LogFile.println(F("Start position of last line send to IoT:\t1"));
+			// Tabs added to prevent line ending with 0. Line ending with 0 indicates that line needs to be sent to IoT.
+			LogFile.println(F("\t\t\t"));
+			LogFile.println(F("Metadata:"));
+			LogFile.println((String)"Station Number\t" + StaNum + "\t\t\t");
+			LogFile.println((String)"Station Name\t" + StaName + "\t\t\t");
+			LogFile.println((String)"Station Type\t" + StaType + "\t\t\t");
+			LogFile.println((String)"Firmware\t" + Firmware + "\t\t\t");
+			LogFile.println(F("\t\t\t"));
+			LogFile.println(F("\t\t\t"));
+			LogFile.println(F("\t\t\t"));
+			LogFile.println(F("\t\t\t"));
+			LogFile.println(F("\t\t\t"));
+			LogFile.println(F("\t\t\t"));
+			LogFile.println(F("\t\t\t"));
+
+			LogFile.println(Headers); // Add Headers
+		}
+		else {
+			LogFile.open(FileName, O_RDWR); // Open file
+			LogFile.seekEnd(); // Set position to end of file
+		}
+
+
+		// Log to SD card
+		LogString = (String)UTC_t + "\t" + local_t + "\t" + yr + "\t" + mo + "\t" + dy + "\t" + h + "\t" + m + "\t" + s + "\t" +
+			String(TempAvg_R, 4) + "\t" + String(RHAvg_R, 4) + "\t" +
+			String(TempAvg_FR, 4) + "\t" + String(RHAvg_FR, 4) + "\t" +
+			String(R_Lamp_ON) + "\t" + String(FR_Lamp_ON) + "\t" +
+			String(R_Fan_ON) + "\t" + String(FR_Fan_ON) + "\t" +
+			String(FR_1_LEDs_ON) + "\t" + String(FR_2_LEDs_ON) + "\t" +
+			String(FR_1_LEDs_PWM_Duty_Cycle) + "\t" + String(FR_2_LEDs_PWM_Duty_Cycle) + "\t" +
+			String(SensorsOKAvg, DEC) + "\t" +
+			"0";
+		LogFile.println(LogString); // Prints Log string to SD card file "LogFile.txt"
+		LogFile.close(); // Close SD card file to save changes
+
+
+		// Reset Shift Registers
+		LastLog = m;
+
+		TempSum_R = 0;
+		RHSum_R = 0;
+		TempSum_FR = 0;
+		RHSum_FR = 0;
+		R_Fan_ON_Sum = 0;
+		FR_Fan_ON_Sum = 0;
+
+		SumNum = 0;
+		SensorsOKAvg = B00001111;
+	}
 	
 
 
