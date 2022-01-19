@@ -927,7 +927,7 @@ void loop() {
 
 
 		// Log to SD card
-		LogString = (String)UTC_t + "\t" + local_t + "\t" + yr + "\t" + mo + "\t" + dy + "\t" + h + "\t" + m + "\t" + s + "\t" +
+		LogString = (String) (unsigned long)UTC_t + "\t" + (unsigned long)local_t + "\t" + yr + "\t" + mo + "\t" + dy + "\t" + h + "\t" + m + "\t" + s + "\t" +
 			String(TempAvg_R, 4) + "\t" + String(RHAvg_R, 4) + "\t" +
 			String(TempAvg_FR, 4) + "\t" + String(RHAvg_FR, 4) + "\t" +
 			String(R_Lamp_ON) + "\t" + String(FR_Lamp_ON) + "\t" +
@@ -954,6 +954,63 @@ void loop() {
 		SensorsOKAvg = B00001111;
 	}
 	
+
+
+	////// State 8. Test if there is data available to be sent to IoT cloud
+	// Only test if Payload is not ready AND
+	// the next DataBucket upload oportunity is in 15 sec 
+	if (!PayloadRdy &&
+		UTC_t - t_DataBucket > DataBucket_frq - 15) {
+		root.open("/");	// Open root directory
+		root.rewind();	// Rewind root directory
+		LogFile.openNext(&root, O_RDWR);
+		while (LogFile.openNext(&root, O_RDWR)) {
+			LogFile.rewind();
+			LogFile.fgets(line, sizeof(line));     // Get first line
+			str = String(line);
+			if (debug) {
+				Serial.print(F("File first line: "));
+				Serial.println(str.substring(0, str.indexOf("\r")));
+			}
+			str = str.substring(str.indexOf("\t"), str.indexOf("\r"));
+			if (str == "Done") {	// Skips file if year data is all sent to IoT
+				LogFile.close();
+				continue;
+			}
+			position = str.toInt();	// Sets file position to start of last line sent to IoT
+			LogFile.seekSet(position);	// Set position to last line sent to LoRa
+			// Read each line until a line not sent to IoT is found
+			while (LogFile.available()) {
+				position = LogFile.curPosition();  // START position of current line
+				int len = LogFile.fgets(line, sizeof(line));
+				if (line[len - 2] == '0') {
+					str = String(line); // str is the payload, next state test if there is internet connection to send payload to IoT
+					if (debug) {
+						Serial.println("Loteria, data to send to IoT found!");
+						Serial.print(F("Data: "));
+						Serial.println(str.substring(0, str.indexOf("\r")));
+					}
+					PayloadRdy = true;
+					break;
+				}
+			}
+		}
+		root.close();
+		LogFile.close();
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
