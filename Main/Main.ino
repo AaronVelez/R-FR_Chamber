@@ -1,7 +1,7 @@
 /*
  Name:		Main.ino
  Created:	12/14/2021 10:19:58 PM
- Authors:	Aar�n I. V�lez Ram�rez and Irving J. Garc�a L�pez
+ Authors:	Aarón I. Vélez Ramírez and Irving J. García López
 */
 
 
@@ -13,8 +13,8 @@
 //////////
 // Pins 11, 12 and 13 are used for WiFi feather wing
 const int SD_CS_PIN = 10;				// SD on Addlogger M0 Feather 
-const int R_Chamber_Lamp_PIN = 14;		// Power Actinic Lamp in Red chamber
-const int FR_Chamber_Lamp_PIN = 15;		// Power Actinic Lamp in Farred chamber
+const int R_Chamber_Actinic_PIN = 14;		// Power Actinic Lamp in Red chamber
+const int FR_Chamber_Actinic_PIN = 15;		// Power Actinic Lamp in Farred chamber
 const int I2C_Select_0_PIN = 9;		// I2C multiplexer digital select line
 const int FR_1_LEDs_PIN = 16;			// Power Farred LEDs, circuit 1
 const int FR_2_LEDs_PIN = 17;			// Power Farred LEDs, circuit 2
@@ -141,9 +141,12 @@ R_Actinic_ON\tFR_Actinic_ON\t\
 R_Fan_ON\tFR_Fan_ON\t\
 FR_1_LEDs_ON\tFR_2_LEDs_ON\t\
 FR_1_LEDs_PWM\tFR_2_LEDs_PWM\t\
+R_Actinic_Manual_Ctrl\tFR_Actinic_Manual_Ctrl\t\
+FR_1_LEDs_Manual_Ctrl\tFR_2_LEDs_Manual_Ctrl\t\
+R_Fan_Manual_Ctrl\tFR_Fan_Manual_Ctrl\t\
 SensorsOK\t\
 SentIoT");
-const int HeaderN = 21;	// cero indexed
+const int HeaderN = 27;	// cero indexed
 String LogString = "";
 
 
@@ -192,37 +195,37 @@ const int DataBucket_frq = 150;       // Data bucket update frequency in seconds
 
 ////// Lamps, LEDs and Fan control variables
 /// Variables for Actinic Lamp in Red Chamber
-bool R_Lamp_Manual_Ctrl = false;
-bool R_Lamp_Manual_ON = false;
-bool R_Lamp_ON = false;
-bool R_Lamp_Period_1 = true;
-bool R_Lamp_Period_2 = false;
-bool R_Lamp_Period_3 = false;
-unsigned int R_Lamp_Period_1_ON = 0;
-unsigned int R_Lamp_Period_2_ON = 0;
-unsigned int R_Lamp_Period_3_ON = 0;
-unsigned int R_Lamp_Period_1_OFF = 0;
-unsigned int R_Lamp_Period_2_OFF = 0;
-unsigned int R_Lamp_Period_3_OFF = 0;
+bool R_Actinic_Manual_Ctrl = false;
+bool R_Actinic_Manual_ON = false;
+bool R_Actinic_ON = false;
+bool R_Actinic_Period_1 = true;
+bool R_Actinic_Period_2 = false;
+bool R_Actinic_Period_3 = false;
+unsigned int R_Actinic_Period_1_ON = 0;
+unsigned int R_Actinic_Period_2_ON = 0;
+unsigned int R_Actinic_Period_3_ON = 0;
+unsigned int R_Actinic_Period_1_OFF = 0;
+unsigned int R_Actinic_Period_2_OFF = 0;
+unsigned int R_Actinic_Period_3_OFF = 0;
 /// Variables for Actinic Lamp in Farred Chamber
-bool FR_Lamp_Manual_Ctrl = false;
-bool FR_Lamp_Manual_ON = false;
-bool FR_Lamp_ON = false;
-bool FR_Lamp_Period_1 = true;
-bool FR_Lamp_Period_2 = false;
-bool FR_Lamp_Period_3 = false;
-unsigned int FR_Lamp_Period_1_ON = 0;
-unsigned int FR_Lamp_Period_2_ON = 0;
-unsigned int FR_Lamp_Period_3_ON = 0;
-unsigned int FR_Lamp_Period_1_OFF = 0;
-unsigned int FR_Lamp_Period_2_OFF = 0;
-unsigned int FR_Lamp_Period_3_OFF = 0;
+bool FR_Actinic_Manual_Ctrl = false;
+bool FR_Actinic_Manual_ON = false;
+bool FR_Actinic_ON = false;
+bool FR_Actinic_Period_1 = true;
+bool FR_Actinic_Period_2 = false;
+bool FR_Actinic_Period_3 = false;
+unsigned int FR_Actinic_Period_1_ON = 0;
+unsigned int FR_Actinic_Period_2_ON = 0;
+unsigned int FR_Actinic_Period_3_ON = 0;
+unsigned int FR_Actinic_Period_1_OFF = 0;
+unsigned int FR_Actinic_Period_2_OFF = 0;
+unsigned int FR_Actinic_Period_3_OFF = 0;
 /// Variables for environmental control
 bool Temp_Ctrl = true;	// If false, control is over Relative humidity
-double R_Temp_Set = 20;
-double FR_Temp_Set = 20;
-double R_RH_Set = 70;
-double FR_RH_Set = 70;
+float R_Temp_Set = 20;
+float FR_Temp_Set = 20;
+float R_RH_Set = 70;
+float FR_RH_Set = 70;
 /// Variables for FarRed LEDs
 // Circuit 1
 bool FR_1_LEDs_Manual_Ctrl = false;
@@ -255,53 +258,67 @@ unsigned int FR_2_LEDs_Period_3_OFF = 0;
 /// Variables for Fans
 bool R_Fan_Manual_Ctrl = false;
 bool R_Fan_Manual_ON = false;
-double R_Fan_ON_t = 0;
+float R_Fan_ON_t = 0;
 bool R_Fan_ON = false;
 bool FR_Fan_Manual_Ctrl = false;
 bool FR_Fan_Manual_ON = false;
-double FR_Fan_ON_t = 0;
+float FR_Fan_ON_t = 0;
 bool FR_Fan_ON = false;
-/// Variables from SD card
-// Actinic lamps
-bool SD_R_Lamp_Manual_Ctrl = false;
-bool SD_R_Lamp_ON = false;
-bool SD_FR_Lamp_Manual_Ctrl = false;
-bool SD_FR_Lamp_ON = false;
-// Farred LEDs
-bool SD_FR_1_LEDs_Manual_Ctrl = false;
-bool SD_FR_1_LEDs_ON = false;
-int SD_FR_1_LEDs_PWM_Duty_Cycle = 0;
-bool SD_FR_2_LEDs_Manual_Ctrl = false;
-bool SD_FR_2_LEDs_ON = false;
-int SD_FR_2_LEDs_PWM_Duty_Cycle = 0;
-// Fans
-bool SD_R_Fan_Manual_Ctrl = false;
-bool SD_R_Chamber_Fan_ON = false;
-bool SD_FR_Fan_Manual_Ctrl = false;
-bool SD_FR_Chamber_Fan_ON = false;
 
 
 ////// Measured instantaneous variables
-double Temp_R = -1;        // Air temperature RED chamber
-double RH_R = -1;          // Air RH value RED chamber
-double Temp_FR = -1;        // Air temperature FARRED chamber 
-double RH_FR = -1;          // Air RH value FARRED chamber
+float Temp_R = -1;        // Air temperature RED chamber
+float RH_R = -1;          // Air RH value RED chamber
+float Temp_FR = -1;        // Air temperature FARRED chamber 
+float RH_FR = -1;          // Air RH value FARRED chamber
 
 
 ////// Variables to store sum for eventual averaging
-double TempSum_R = 0;
-double RHSum_R = 0;
-double TempSum_FR = 0;
-double RHSum_FR = 0;
-double R_Fan_ON_Sum = 0;
-double FR_Fan_ON_Sum = 0;
+//Environmental
+float TempSum_R = 0;
+float RHSum_R = 0;
+float TempSum_FR = 0;
+float RHSum_FR = 0;
+// Actinic lamps
+int R_Actinic_Manual_Ctrl_Sum = 0;
+int R_Actinic_ON_Sum = 0;
+int FR_Actinic_Manual_Ctrl_Sum = 0;
+int FR_Actinic_ON_Sum = 0;
+// Farred LEDs
+int FR_1_LEDs_Manual_Ctrl_Sum = 0;
+int FR_1_LEDs_ON_Sum = 0;
+int FR_1_LEDs_PWM_Duty_Cycle_Sum = 0;
+int FR_2_LEDs_Manual_Ctrl_Sum = 0;
+int FR_2_LEDs_ON_Sum = 0;
+int FR_2_LEDs_PWM_Duty_Cycle_Sum = 0;
+// Fans
+int R_Fan_Manual_Ctrl_Sum = 0;
+int FR_Fan_Manual_Ctrl_Sum = 0;
+int R_Fan_ON_Sum = 0;
+int FR_Fan_ON_Sum = 0;
 
 
 ////// Values to be logged. They will be the average over the last 5 minutes
+//Environmental
 float TempAvg_R = 0;
 float RHAvg_R = 0;
 float TempAvg_FR = 0;
 float RHAvg_FR = 0;
+// Actinic lamps
+float R_Actinic_Manual_Ctrl_Avg = 0;
+float R_Actinic_ON_Avg = 0;
+float FR_Actinic_Manual_Ctrl_Avg = 0;
+float FR_Actinic_ON_Avg = 0;
+// Farred LEDs
+float FR_1_LEDs_Manual_Ctrl_Avg = 0;
+float FR_1_LEDs_ON_Avg = 0;
+float FR_1_LEDs_PWM_Duty_Cycle_Avg = 0;
+float FR_2_LEDs_Manual_Ctrl_Avg = 0;
+float FR_2_LEDs_ON_Avg = 0;
+float FR_2_LEDs_PWM_Duty_Cycle_Avg = 0;
+// Fans
+float R_Fan_Manual_Ctrl_Avg = 0;
+float FR_Fan_Manual_Ctrl_Avg = 0;
 float R_Fan_ON_Avg = 0;
 float FR_Fan_ON_Avg = 0;
 
@@ -330,7 +347,7 @@ void setup() {
 	if (debug = true) { Serial.print(F("\nSetup start\n")); }
 	Wire.begin();
 	SPI.begin();
-	
+
 
 	////// Start WiFi
 	if (debug = true) { Serial.print(F("Conecting to WiFi")); }
@@ -353,15 +370,15 @@ void setup() {
 			WiFi.disconnect();  // if no internet, disconnect. This prevents the board to be busy only trying to connect.
 		}
 	}
-	
+
 
 	////// Set pin modes of pins not associated with libraries
 	//analogReadResolution(12);
 	// Actinic light
-	pinMode(R_Chamber_Lamp_PIN, OUTPUT);
-	digitalWrite(R_Chamber_Lamp_PIN, LOW);
-	pinMode(FR_Chamber_Lamp_PIN, OUTPUT);
-	digitalWrite(FR_Chamber_Lamp_PIN, LOW);
+	pinMode(R_Chamber_Actinic_PIN, OUTPUT);
+	digitalWrite(R_Chamber_Actinic_PIN, LOW);
+	pinMode(FR_Chamber_Actinic_PIN, OUTPUT);
+	digitalWrite(FR_Chamber_Actinic_PIN, LOW);
 	//I2C multiplexer
 	pinMode(I2C_Select_0_PIN, OUTPUT);
 	digitalWrite(I2C_Select_0_PIN, LOW);
@@ -390,70 +407,70 @@ void setup() {
 	LogString.reserve(HeaderN * 7);
 	str.reserve(HeaderN * 7);
 
-	
+
 	////// Configure IoT
 	if (debug) { Serial.println(F("Configuring IoT...")); }
 	thing.add_wifi(ssid, password);
-	
+
 	// Define input resources
 	thing["Debug"] << [](pson& in) {
 		if (in.is_empty()) { in = debug; }
 		else { debug = in; }
 	};
-	thing["R_Lamp_Ctrl"] << [](pson& in) {
+	thing["R_Actinic_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
-			in["R_Lamp_Manual_Ctrl"] = R_Lamp_Manual_Ctrl;
-			in["R_Lamp_Manual_ON"] = R_Lamp_Manual_ON;
-			in["R_Lamp_Period_1"] = R_Lamp_Period_1;
-			in["R_Lamp_Period_2"] = R_Lamp_Period_2;
-			in["R_Lamp_Period_3"] = R_Lamp_Period_3;
-			in["R_Lamp_Period_1_ON"] = R_Lamp_Period_1_ON;
-			in["R_Lamp_Period_2_ON"] = R_Lamp_Period_2_ON;
-			in["R_Lamp_Period_3_ON"] = R_Lamp_Period_3_ON;
-			in["R_Lamp_Period_1_OFF"] = R_Lamp_Period_1_OFF;
-			in["R_Lamp_Period_2_OFF"] = R_Lamp_Period_2_OFF;
-			in["R_Lamp_Period_3_OFF"] = R_Lamp_Period_3_OFF;
+			in["R_Actinic_Manual_Ctrl"] = R_Actinic_Manual_Ctrl;
+			in["R_Actinic_Manual_ON"] = R_Actinic_Manual_ON;
+			in["R_Actinic_Period_1"] = R_Actinic_Period_1;
+			in["R_Actinic_Period_2"] = R_Actinic_Period_2;
+			in["R_Actinic_Period_3"] = R_Actinic_Period_3;
+			in["R_Actinic_Period_1_ON"] = R_Actinic_Period_1_ON;
+			in["R_Actinic_Period_2_ON"] = R_Actinic_Period_2_ON;
+			in["R_Actinic_Period_3_ON"] = R_Actinic_Period_3_ON;
+			in["R_Actinic_Period_1_OFF"] = R_Actinic_Period_1_OFF;
+			in["R_Actinic_Period_2_OFF"] = R_Actinic_Period_2_OFF;
+			in["R_Actinic_Period_3_OFF"] = R_Actinic_Period_3_OFF;
 		}
 		else {
-			R_Lamp_Manual_Ctrl = in["R_Lamp_Manual_Ctrl"];
-			R_Lamp_Manual_ON = in["R_Lamp_Manual_ON"];
-			R_Lamp_Period_1 = in["R_Lamp_Period_1"];
-			R_Lamp_Period_2 = in["R_Lamp_Period_2"];
-			R_Lamp_Period_3 = in["R_Lamp_Period_3"];
-			R_Lamp_Period_1_ON = in["R_Lamp_Period_1_ON"];
-			R_Lamp_Period_2_ON = in["R_Lamp_Period_2_ON"];
-			R_Lamp_Period_3_ON = in["R_Lamp_Period_3_ON"];
-			R_Lamp_Period_1_OFF = in["R_Lamp_Period_1_OFF"];
-			R_Lamp_Period_2_OFF = in["R_Lamp_Period_2_OFF"];
-			R_Lamp_Period_3_OFF = in["R_Lamp_Period_3_OFF"];
+			R_Actinic_Manual_Ctrl = in["R_Actinic_Manual_Ctrl"];
+			R_Actinic_Manual_ON = in["R_Actinic_Manual_ON"];
+			R_Actinic_Period_1 = in["R_Actinic_Period_1"];
+			R_Actinic_Period_2 = in["R_Actinic_Period_2"];
+			R_Actinic_Period_3 = in["R_Actinic_Period_3"];
+			R_Actinic_Period_1_ON = in["R_Actinic_Period_1_ON"];
+			R_Actinic_Period_2_ON = in["R_Actinic_Period_2_ON"];
+			R_Actinic_Period_3_ON = in["R_Actinic_Period_3_ON"];
+			R_Actinic_Period_1_OFF = in["R_Actinic_Period_1_OFF"];
+			R_Actinic_Period_2_OFF = in["R_Actinic_Period_2_OFF"];
+			R_Actinic_Period_3_OFF = in["R_Actinic_Period_3_OFF"];
 		}
 	};
-	thing["FR_Lamp_Ctrl"] << [](pson& in) {
+	thing["FR_Actinic_Ctrl"] << [](pson& in) {
 		if (in.is_empty()) {
-			in["FR_Lamp_Manual_Ctrl"] = FR_Lamp_Manual_Ctrl;
-			in["FR_Lamp_Manual_ON"] = FR_Lamp_Manual_ON;
-			in["FR_Lamp_Period_1"] = FR_Lamp_Period_1;
-			in["FR_Lamp_Period_2"] = FR_Lamp_Period_2;
-			in["FR_Lamp_Period_3"] = FR_Lamp_Period_3;
-			in["FR_Lamp_Period_1_ON"] = FR_Lamp_Period_1_ON;
-			in["FR_Lamp_Period_2_ON"] = FR_Lamp_Period_2_ON;
-			in["FR_Lamp_Period_3_ON"] = FR_Lamp_Period_3_ON;
-			in["FR_Lamp_Period_1_OFF"] = FR_Lamp_Period_1_OFF;
-			in["FR_Lamp_Period_2_OFF"] = FR_Lamp_Period_2_OFF;
-			in["FR_Lamp_Period_3_OFF"] = FR_Lamp_Period_3_OFF;
+			in["FR_Actinic_Manual_Ctrl"] = FR_Actinic_Manual_Ctrl;
+			in["FR_Actinic_Manual_ON"] = FR_Actinic_Manual_ON;
+			in["FR_Actinic_Period_1"] = FR_Actinic_Period_1;
+			in["FR_Actinic_Period_2"] = FR_Actinic_Period_2;
+			in["FR_Actinic_Period_3"] = FR_Actinic_Period_3;
+			in["FR_Actinic_Period_1_ON"] = FR_Actinic_Period_1_ON;
+			in["FR_Actinic_Period_2_ON"] = FR_Actinic_Period_2_ON;
+			in["FR_Actinic_Period_3_ON"] = FR_Actinic_Period_3_ON;
+			in["FR_Actinic_Period_1_OFF"] = FR_Actinic_Period_1_OFF;
+			in["FR_Actinic_Period_2_OFF"] = FR_Actinic_Period_2_OFF;
+			in["FR_Actinic_Period_3_OFF"] = FR_Actinic_Period_3_OFF;
 		}
 		else {
-			FR_Lamp_Manual_Ctrl = in["FR_Lamp_Manual_Ctrl"];
-			FR_Lamp_Manual_ON = in["FR_Lamp_Manual_ON"];
-			FR_Lamp_Period_1 = in["FR_Lamp_Period_1"];
-			FR_Lamp_Period_2 = in["FR_Lamp_Period_2"];
-			FR_Lamp_Period_3 = in["FR_Lamp_Period_3"];
-			FR_Lamp_Period_1_ON = in["FR_Lamp_Period_1_ON"];
-			FR_Lamp_Period_2_ON = in["FR_Lamp_Period_2_ON"];
-			FR_Lamp_Period_3_ON = in["FR_Lamp_Period_3_ON"];
-			FR_Lamp_Period_1_OFF = in["FR_Lamp_Period_1_OFF"];
-			FR_Lamp_Period_2_OFF = in["FR_Lamp_Period_2_OFF"];
-			FR_Lamp_Period_3_OFF = in["FR_Lamp_Period_3_OFF"];
+			FR_Actinic_Manual_Ctrl = in["FR_Actinic_Manual_Ctrl"];
+			FR_Actinic_Manual_ON = in["FR_Actinic_Manual_ON"];
+			FR_Actinic_Period_1 = in["FR_Actinic_Period_1"];
+			FR_Actinic_Period_2 = in["FR_Actinic_Period_2"];
+			FR_Actinic_Period_3 = in["FR_Actinic_Period_3"];
+			FR_Actinic_Period_1_ON = in["FR_Actinic_Period_1_ON"];
+			FR_Actinic_Period_2_ON = in["FR_Actinic_Period_2_ON"];
+			FR_Actinic_Period_3_ON = in["FR_Actinic_Period_3_ON"];
+			FR_Actinic_Period_1_OFF = in["FR_Actinic_Period_1_OFF"];
+			FR_Actinic_Period_2_OFF = in["FR_Actinic_Period_2_OFF"];
+			FR_Actinic_Period_3_OFF = in["FR_Actinic_Period_3_OFF"];
 		}
 	};
 	thing["Env_Ctrl"] << [](pson& in) {
@@ -538,10 +555,10 @@ void setup() {
 			FR_2_LEDs_Period_3_OFF = in["FR_2_LEDs_Period_3_OFF"];
 		}
 	};
-	
+
 	// Define output resources
-	thing["RT_R_Lamp_ON"] >> [](pson& out) { out = R_Lamp_ON; };
-	thing["RT_FR_Lamp_ON"] >> [](pson& out) { out = FR_Lamp_ON; };
+	thing["RT_R_Actinic_ON"] >> [](pson& out) { out = R_Actinic_ON; };
+	thing["RT_FR_Actinic_ON"] >> [](pson& out) { out = FR_Actinic_ON; };
 	thing["RT_FR_1_LEDs_ON"] >> [](pson& out) { out = FR_1_LEDs_ON; };
 	thing["RT_FR_2_LEDs_ON"] >> [](pson& out) { out = FR_2_LEDs_ON; };
 	thing["RT_R_Fan_ON "] >> [](pson& out) { out = R_Fan_ON; };
@@ -550,31 +567,31 @@ void setup() {
 	thing["RT_RH_Red"] >> [](pson& out) { out = RH_R; };
 	thing["RT_Temp_FarRed"] >> [](pson& out) { out = Temp_FR; };
 	thing["RT_RH_FarRed"] >> [](pson& out) { out = RH_FR; };
-	
+
 	thing["Avg_Data"] >> [](pson& out) {
 		out["Time_Stamp"] = SD_local_t;
-		out["Red_Chamber_Lamp_Manual_Ctrl"] = SD_R_Lamp_Manual_Ctrl;
-		out["Red_Chamber_Lamp_ON"] = SD_R_Lamp_ON;
-		out["FarRed_Chamber_Lamp_Manual_Ctrl"] = SD_FR_Lamp_Manual_Ctrl;
-		out["FarRed_Chamber_Lamp_ON"] = SD_FR_Lamp_ON;
-		out["FarRed_1_LEDs_Manual_Ctrl"] = SD_FR_1_LEDs_Manual_Ctrl;
-		out["FarRed_1_LEDs_ON"] = SD_FR_1_LEDs_ON;
-		out["FarRed_1_LEDs_PWM_Duty_Cycle"] = SD_FR_1_LEDs_PWM_Duty_Cycle;
-		out["FarRed_2_LEDs_Manual_Ctrl"] = SD_FR_2_LEDs_Manual_Ctrl;
-		out["FarRed_2_LEDs_ON"] = SD_FR_2_LEDs_ON;
-		out["FarRed_2_LEDs_PWM_Duty_Cycle"] = SD_FR_2_LEDs_PWM_Duty_Cycle;
-		out["Red_Chamber_Fan_Manual_Ctrl"] = SD_R_Fan_Manual_Ctrl;
-		out["Red_Chamber_Chamber_Fan_ON"] = SD_R_Chamber_Fan_ON;
-		out["FarRed_Chamber_Fan_Manual_Ctrl"] = SD_FR_Fan_Manual_Ctrl;
-		out["Red_Chamber_Chamber_Fan_ON"] = SD_FR_Chamber_Fan_ON;
 		out["Temperature_Red_Chamber"] = TempAvg_R;
 		out["Relative_Humidity_Red_Chamber"] = RHAvg_R;
 		out["Temperature_FarRed_Chamber"] = TempAvg_FR;
 		out["Relative_Humidity_FarRed_Chamber"] = RHAvg_FR;
+		out["Red_Chamber_Actinic_Manual_Ctrl"] = R_Actinic_Manual_Ctrl_Avg;
+		out["Red_Chamber_Actinic_ON"] = R_Actinic_ON_Avg;
+		out["FarRed_Chamber_Actinic_Manual_Ctrl"] = FR_Actinic_Manual_Ctrl_Avg;
+		out["FarRed_Chamber_Actinic_ON"] = FR_Actinic_ON_Avg;
+		out["FarRed_1_LEDs_Manual_Ctrl"] = FR_1_LEDs_Manual_Ctrl_Avg;
+		out["FarRed_1_LEDs_ON"] = FR_1_LEDs_ON_Avg;
+		out["FarRed_1_LEDs_PWM_Duty_Cycle"] = FR_1_LEDs_PWM_Duty_Cycle_Avg;
+		out["FarRed_2_LEDs_Manual_Ctrl"] = FR_2_LEDs_Manual_Ctrl_Avg;
+		out["FarRed_2_LEDs_ON"] = FR_2_LEDs_ON_Avg;
+		out["FarRed_2_LEDs_PWM_Duty_Cycle"] = FR_2_LEDs_PWM_Duty_Cycle_Avg;
+		out["Red_Chamber_Fan_Manual_Ctrl"] = R_Fan_Manual_Ctrl_Avg;
+		out["Red_Chamber_Fan_ON"] = R_Fan_ON_Avg;
+		out["FarRed_Chamber_Fan_Manual_Ctrl"] = FR_Fan_Manual_Ctrl_Avg;
+		out["Red_Chamber_Fan_ON"] = FR_Fan_ON_Avg;
 		out["Sensors_OK"] = SensorsOKIoT;
 	};
-	
-	
+
+
 
 	////// Start RTC
 	if (debug) { Serial.println(F("Starting RTC...")); }
@@ -587,7 +604,7 @@ void setup() {
 	if (!GetNTPTime()) {
 		GetRTCTime();
 	}
-	
+
 
 	//////// If internet, start NTP client engine
 	//////// and update RTC and system time
@@ -616,7 +633,7 @@ void setup() {
 	if (!sht3x.softReset()) {
 		if (debug) { Serial.println(F("Failed to initialize Red sensor....")); }
 	}
-	
+
 	// Far red Chamber sensor
 	if (debug) { Serial.println(F("Starting Temp/RH sensor Far red...")); }
 	digitalWrite(I2C_Select_0_PIN, HIGH);
@@ -671,7 +688,7 @@ void loop() {
 		t_WiFiCnxTry = UTC_t;
 	}
 
-	
+
 	////// State 1. Keep the Iot engine runing
 	thing.handle();
 
@@ -725,10 +742,10 @@ void loop() {
 			bitWrite(SensorsOK, 3, 0);
 		}
 		digitalWrite(I2C_Select_0_PIN, LOW);
-		
+
 		// Record if sensor reads were OK
 		SensorsOKAvg = SensorsOKAvg & SensorsOK;
-		if ( debug && (!bitRead(SensorsOK, 0) || !bitRead(SensorsOK, 1) || !bitRead(SensorsOK, 2) || !bitRead(SensorsOK, 3)) ) {
+		if (debug && (!bitRead(SensorsOK, 0) || !bitRead(SensorsOK, 1) || !bitRead(SensorsOK, 2) || !bitRead(SensorsOK, 3))) {
 			Serial.println(F("At least 1 sensor read failed"));
 			Serial.print(F("SensorOK byte: "));
 			Serial.println(SensorsOK, BIN);
@@ -743,12 +760,30 @@ void loop() {
 		}
 
 		// Add new values to sum
+		// Environment
 		TempSum_R += Temp_R;
 		RHSum_R += RH_R;
 		TempSum_FR += Temp_FR;
 		RHSum_FR += RH_FR;
+		// Actinic
+		R_Actinic_Manual_Ctrl_Sum += (int)R_Actinic_Manual_Ctrl;
+		R_Actinic_ON_Sum += (int)R_Actinic_ON;
+		FR_Actinic_Manual_Ctrl_Sum += (int)FR_Actinic_Manual_Ctrl;
+		FR_Actinic_ON_Sum += (int)FR_Actinic_ON;
+		// Farred LEDs
+		FR_1_LEDs_Manual_Ctrl_Sum += (int)FR_1_LEDs_Manual_Ctrl;
+		FR_1_LEDs_ON_Sum += (int)FR_1_LEDs_ON;
+		FR_1_LEDs_PWM_Duty_Cycle_Sum += FR_1_LEDs_PWM_Duty_Cycle;
+		FR_2_LEDs_Manual_Ctrl_Sum += (int)FR_2_LEDs_Manual_Ctrl;
+		FR_2_LEDs_ON_Sum += (int)FR_2_LEDs_ON;
+		FR_2_LEDs_PWM_Duty_Cycle_Sum += FR_2_LEDs_PWM_Duty_Cycle;
+		// Fans
+		R_Fan_Manual_Ctrl_Sum += (int)R_Fan_Manual_Ctrl;
+		FR_Fan_Manual_Ctrl_Sum += (int)FR_Fan_Manual_Ctrl;
 		R_Fan_ON_Sum += (int)R_Fan_ON;
 		FR_Fan_ON_Sum += (int)FR_Fan_ON;
+
+
 
 		// Update Shift registers
 		LastSum = m;
@@ -803,42 +838,42 @@ void loop() {
 
 
 
-	////// State 6. Set IoT Control over Lamps and LEDs
+	////// State 6. Set IoT Control over Actinic Lamps and LEDs
 	// Red Chamber Actinic Lamp
-	if (R_Lamp_Manual_Ctrl) { R_Lamp_ON = R_Lamp_Manual_ON; }
+	if (R_Actinic_Manual_Ctrl) { R_Actinic_ON = R_Actinic_Manual_ON; }
 	else {
 		bool Period_1 = false;
-		if (R_Lamp_Period_1) { Period_1 = SetLights(R_Lamp_Period_1_ON, R_Lamp_Period_1_OFF); }
+		if (R_Actinic_Period_1) { Period_1 = SetLights(R_Actinic_Period_1_ON, R_Actinic_Period_1_OFF); }
 		bool Period_2 = false;
-		if (R_Lamp_Period_2) { Period_2 = SetLights(R_Lamp_Period_2_ON, R_Lamp_Period_2_OFF); }
+		if (R_Actinic_Period_2) { Period_2 = SetLights(R_Actinic_Period_2_ON, R_Actinic_Period_2_OFF); }
 		bool Period_3 = false;
-		if (R_Lamp_Period_3) { Period_3 = SetLights(R_Lamp_Period_3_ON, R_Lamp_Period_3_OFF); }
-		if ( Period_1 || Period_2 || Period_3 ) {
-			R_Lamp_ON = true;
+		if (R_Actinic_Period_3) { Period_3 = SetLights(R_Actinic_Period_3_ON, R_Actinic_Period_3_OFF); }
+		if (Period_1 || Period_2 || Period_3) {
+			R_Actinic_ON = true;
 		}
 		else {
-			R_Lamp_ON = false;
+			R_Actinic_ON = false;
 		}
 	}
-	digitalWrite(R_Chamber_Lamp_PIN, R_Lamp_ON);
+	digitalWrite(R_Chamber_Actinic_PIN, R_Actinic_ON);
 
 	// Farred Chamber Actinic Lamp
-	if (FR_Lamp_Manual_Ctrl) { FR_Lamp_ON = FR_Lamp_Manual_ON; }
+	if (FR_Actinic_Manual_Ctrl) { FR_Actinic_ON = FR_Actinic_Manual_ON; }
 	else {
 		bool Period_1 = false;
-		if (FR_Lamp_Period_1) { Period_1 = SetLights(FR_Lamp_Period_1_ON, FR_Lamp_Period_1_OFF); }
+		if (FR_Actinic_Period_1) { Period_1 = SetLights(FR_Actinic_Period_1_ON, FR_Actinic_Period_1_OFF); }
 		bool Period_2 = false;
-		if (FR_Lamp_Period_2) { Period_2 = SetLights(FR_Lamp_Period_2_ON, FR_Lamp_Period_2_OFF); }
+		if (FR_Actinic_Period_2) { Period_2 = SetLights(FR_Actinic_Period_2_ON, FR_Actinic_Period_2_OFF); }
 		bool Period_3 = false;
-		if (FR_Lamp_Period_3) { Period_3 = SetLights(FR_Lamp_Period_3_ON, FR_Lamp_Period_3_OFF); }
+		if (FR_Actinic_Period_3) { Period_3 = SetLights(FR_Actinic_Period_3_ON, FR_Actinic_Period_3_OFF); }
 		if (Period_1 || Period_2 || Period_3) {
-			FR_Lamp_ON = true;
+			FR_Actinic_ON = true;
 		}
 		else {
-			FR_Lamp_ON = false;
+			FR_Actinic_ON = false;
 		}
 	}
-	digitalWrite(FR_Chamber_Lamp_PIN, FR_Lamp_ON);
+	digitalWrite(FR_Chamber_Actinic_PIN, FR_Actinic_ON);
 
 	// Farred LEDs Circuit 1
 	if (FR_1_LEDs_Manual_Ctrl) { FR_1_LEDs_ON = FR_1_LEDs_Manual_ON; }
@@ -880,12 +915,12 @@ void loop() {
 	if (FR_2_LEDs_ON) { analogWrite(FR_2_LEDs_PWM_PIN, FR_2_LEDs_PWM_Duty_Cycle); }
 	else { analogWrite(FR_2_LEDs_PWM_PIN, 0); }
 
-	
-	
 
 
 
-	
+
+
+
 	////// State 7. Test if it is time to compute  averages and record in SD card (each 5 minutes)
 	if (((m % 5) == 0) && (m != LastLog) && (SumNum > 0)) {
 		// Calculate averages
@@ -893,6 +928,21 @@ void loop() {
 		RHAvg_R = RHSum_R / SumNum;
 		TempAvg_FR = TempSum_FR / SumNum;
 		RHAvg_FR = RHSum_FR / SumNum;
+		// Actinic
+		R_Actinic_Manual_Ctrl_Avg = R_Actinic_Manual_Ctrl_Sum / SumNum;
+		R_Actinic_ON_Avg = R_Actinic_ON_Sum / SumNum;
+		FR_Actinic_Manual_Ctrl_Avg = FR_Actinic_Manual_Ctrl_Sum / SumNum;
+		FR_Actinic_ON_Avg = FR_Actinic_ON_Sum / SumNum;
+		// Farred LEDs
+		FR_1_LEDs_Manual_Ctrl_Avg = FR_1_LEDs_Manual_Ctrl_Sum / SumNum;
+		FR_1_LEDs_ON_Avg = FR_1_LEDs_ON_Sum / SumNum;
+		FR_1_LEDs_PWM_Duty_Cycle_Avg = FR_1_LEDs_PWM_Duty_Cycle_Sum / SumNum;
+		FR_2_LEDs_Manual_Ctrl_Avg = FR_2_LEDs_Manual_Ctrl_Sum / SumNum;
+		FR_2_LEDs_ON_Avg = FR_2_LEDs_ON_Sum / SumNum;
+		FR_2_LEDs_PWM_Duty_Cycle_Avg = FR_2_LEDs_PWM_Duty_Cycle_Sum / SumNum;
+		// Fans
+		R_Fan_Manual_Ctrl_Avg = R_Fan_Manual_Ctrl_Sum / SumNum;
+		FR_Fan_Manual_Ctrl_Avg = FR_Fan_Manual_Ctrl_Sum / SumNum;
 		R_Fan_ON_Avg = R_Fan_ON_Sum / SumNum;
 		FR_Fan_ON_Avg = FR_Fan_ON_Sum / SumNum;
 
@@ -927,13 +977,19 @@ void loop() {
 
 
 		// Log to SD card
-		LogString = (String) (unsigned long)UTC_t + "\t" + (unsigned long)local_t + "\t" + yr + "\t" + mo + "\t" + dy + "\t" + h + "\t" + m + "\t" + s + "\t" +
+		LogString = (String)(unsigned long)UTC_t + "\t" + (unsigned long)local_t + "\t" + yr + "\t" + mo + "\t" + dy + "\t" + h + "\t" + m + "\t" + s + "\t" +
 			String(TempAvg_R, 4) + "\t" + String(RHAvg_R, 4) + "\t" +
 			String(TempAvg_FR, 4) + "\t" + String(RHAvg_FR, 4) + "\t" +
-			String(R_Lamp_ON) + "\t" + String(FR_Lamp_ON) + "\t" +
+			String(R_Actinic_ON) + "\t" + String(FR_Actinic_ON) + "\t" +
 			String(R_Fan_ON) + "\t" + String(FR_Fan_ON) + "\t" +
 			String(FR_1_LEDs_ON) + "\t" + String(FR_2_LEDs_ON) + "\t" +
 			String(FR_1_LEDs_PWM_Duty_Cycle) + "\t" + String(FR_2_LEDs_PWM_Duty_Cycle) + "\t" +
+
+
+
+
+
+
 			String(SensorsOKAvg, DEC) + "\t" +
 			"0";
 		LogFile.println(LogString); // Prints Log string to SD card file "LogFile.txt"
@@ -953,7 +1009,7 @@ void loop() {
 		SumNum = 0;
 		SensorsOKAvg = B00001111;
 	}
-	
+
 
 
 	////// State 8. Test if there is data available to be sent to IoT cloud
@@ -1001,7 +1057,144 @@ void loop() {
 
 
 
-
+	////// State 9. Test if there is Internet and a Payload to sent SD data to IoT
+	if (true) {
+		if (debug) {
+			Serial.print(F("Thing connected, payload ready and enought time has enlapsed: "));
+			Serial.println(thing.is_connected() &&
+				PayloadRdy &&
+				UTC_t - t_DataBucket > DataBucket_frq);
+		}
+		if (thing.is_connected() &&
+			PayloadRdy &&
+			UTC_t - t_DataBucket > DataBucket_frq) {
+			t_DataBucket = UTC_t; // Record Data Bucket update TRY; even if it is not succesfful
+			// extract data from payload string (str)
+			for (int i = 0; i < HeaderN; i++) {
+				String buffer = str.substring(0, str.indexOf('\t'));
+				if (i != 7) { 	// Do not read seconds info
+					if (i == 0) {   // UTC UNIX Time
+						// Do not send to IoT
+					}
+					else if (i == 1) {  // Local UNIX time
+						SD_local_t = buffer.toInt();
+					}
+					else if (i == 2) {
+						yrIoT = buffer.toInt();
+					}
+					else if (i == 3) {
+						moIoT = buffer.toInt();
+					}
+					else if (i == 4) {
+						dyIoT = buffer.toInt();
+					}
+					else if (i == 5) {
+						hIoT = buffer.toInt();
+					}
+					else if (i == 6) {
+						mIoT = buffer.toInt();
+					}
+					else if (i == 8) {  // Red chamber Temp
+						TempAvg_R = buffer.toFloat();
+					}
+					else if (i == 9) {  // Red chamber RH
+						RHAvg_R = buffer.toFloat();
+					}
+					else if (i == 10) {  // Farred chamber Temp
+						TempAvg_FR = buffer.toFloat();
+					}
+					else if (i == 11) { // Farred chamber RH
+						RHAvg_FR = buffer.toFloat();
+					}
+					else if (i == 12) { // Red chamber Actinic lamp ON?
+						R_Actinic_ON_Avg = buffer.toInt();
+					}
+					else if (i == 13) { // Farred chamber Actinic lamp ON?
+						FR_Actinic_ON_Avg = buffer.toInt();
+					}
+					else if (i == 14) { // Red chamber Fan ON?
+						R_Fan_ON_Avg = buffer.toInt();
+					}
+					else if (i == 15) { // Farred chamber Fan ON?
+						FR_Fan_ON_Avg = buffer.toInt();
+					}
+					else if (i == 16) { // FR LEDs 1 ON?
+						FR_1_LEDs_ON_Avg = buffer.toInt();
+					}
+					else if (i == 17) { // FR LEDs 2 ON?
+						FR_2_LEDs_ON_Avg = buffer.toInt();
+					}
+					else if (i == 18) { // FR LEDs 1 PWM
+						FR_1_LEDs_PWM_Duty_Cycle_Avg = buffer.toInt();
+					}
+					else if (i == 19) { // FR LEDs 2 PWM
+						FR_2_LEDs_PWM_Duty_Cycle_Avg = buffer.toInt();
+					}
+					else if (i == 20) { // 
+						R_Actinic_Manual_Ctrl_Avg = buffer.toInt();
+					}
+					else if (i == 21) { // 
+						FR_Actinic_Manual_Ctrl_Avg = buffer.toInt();
+					}
+					else if (i == 22) { // 
+						FR_1_LEDs_Manual_Ctrl_Avg = buffer.toInt();
+					}
+					else if (i == 23) { // 
+						FR_2_LEDs_Manual_Ctrl_Avg = buffer.toInt();
+					}
+					else if (i == 24) { // 
+						R_Fan_Manual_Ctrl_Avg = buffer.toInt();
+					}
+					else if (i == 25) { // 
+						FR_Fan_Manual_Ctrl_Avg = buffer.toInt();
+					}
+					else if (i == 26) { // SensorsOK
+						SensorsOKIoT = buffer.toInt();
+					}
+				}
+				str = str.substring(str.indexOf('\t') + 1);
+			}
+			// send data to IoT. If succsessful, rewrite line in log File
+			if (thing.write_bucket(iot_data_bucket, "Avg_Data", true) == 1) {
+				if (debug) { Serial.println(F("Loteria, data on Cloud!!!")); }
+				// Update line sent to IoT status
+				if (debug) {
+					Serial.print(F("IoT year: "));
+					Serial.println(yrIoT);
+					Serial.print(F("File name: "));
+					Serial.println(FileName[yrIoT - 2020]);
+				}
+				LogFile.open(FileName[yrIoT - 2020], O_RDWR); // Open file containing the data just sent to IoT
+				str = String(line);                     // Recover complete payload from original line
+				str.setCharAt(str.length() - 2, '1');   // Replace 0 with 1, last characters are always "\r\n"
+				LogFile.seekSet(position);              // Set position to start of line to be rewritten
+				LogFile.println(str.substring(0, str.length() - 1));    // Remove last character ('\n') to prevent an empty line below rewritten line
+				// Test if this line is last line of year Log File, if so, write "Done" at the end of first line
+				if (moIoT == 12 && dyIoT == 31 && hIoT == 23 && mIoT == 55) {
+					LogFile.rewind();
+					LogFile.fgets(line, sizeof(line));     // Get first line
+					str = String(line);
+					str = str.substring(0, str.indexOf("\t"));
+					str = (String)str + "\t" + "Done";
+					LogFile.rewind();
+					LogFile.println(str.substring(0, str.length() - 1));    // Remove last character ('\n') to prevent an empty line below rewritten line
+					LogFile.close();
+				}
+				else {
+					// Update start position of last line sent to IoT
+					LogFile.rewind();
+					LogFile.fgets(line, sizeof(line));     // Get first line
+					str = String(line);
+					str = str.substring(0, str.indexOf("\t"));
+					str = (String)str + "\t" + position;
+					LogFile.rewind();
+					LogFile.println(str);
+					LogFile.close();
+				}
+				PayloadRdy = false;
+			}
+		}
+	}
 
 
 
