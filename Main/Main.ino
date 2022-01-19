@@ -1,7 +1,7 @@
 /*
  Name:		Main.ino
  Created:	12/14/2021 10:19:58 PM
- Authors:	Aarón I. Vélez Ramírez and Irving J. García López
+ Author:	Aarón I. Vélez Ramírez
 */
 
 
@@ -120,7 +120,7 @@ const int StaNum = 7;
 String StaType = F("M0_WiFiNA_RTC-PCF8523_Thinger");
 String StaName = F("R-FR Chamber LANGEBIO");
 String Firmware = F("v1.0.0");
-//const float VRef = 3.3;
+//const double VRef = 3.3;
 bool debug = true;
 
 
@@ -152,7 +152,7 @@ String LogString = "";
 
 ////// M0 ADC constants
 const int n = 100; // measure n times the ADC input for averaging
-float sum = 0; // shift register to hold ADC data
+double sum = 0; // shift register to hold ADC data
 
 
 ////// Time variables
@@ -222,10 +222,10 @@ unsigned int FR_Actinic_Period_2_OFF = 0;
 unsigned int FR_Actinic_Period_3_OFF = 0;
 /// Variables for environmental control
 bool Temp_Ctrl = true;	// If false, control is over Relative humidity
-float R_Temp_Set = 20;
-float FR_Temp_Set = 20;
-float R_RH_Set = 70;
-float FR_RH_Set = 70;
+double R_Temp_Set = 20;
+double FR_Temp_Set = 20;
+double R_RH_Set = 70;
+double FR_RH_Set = 70;
 /// Variables for FarRed LEDs
 // Circuit 1
 bool FR_1_LEDs_Manual_Ctrl = false;
@@ -258,27 +258,27 @@ unsigned int FR_2_LEDs_Period_3_OFF = 0;
 /// Variables for Fans
 bool R_Fan_Manual_Ctrl = false;
 bool R_Fan_Manual_ON = false;
-float R_Fan_ON_t = 0;
+double R_Fan_ON_t = 0;
 bool R_Fan_ON = false;
 bool FR_Fan_Manual_Ctrl = false;
 bool FR_Fan_Manual_ON = false;
-float FR_Fan_ON_t = 0;
+double FR_Fan_ON_t = 0;
 bool FR_Fan_ON = false;
 
 
 ////// Measured instantaneous variables
-float Temp_R = -1;        // Air temperature RED chamber
-float RH_R = -1;          // Air RH value RED chamber
-float Temp_FR = -1;        // Air temperature FARRED chamber 
-float RH_FR = -1;          // Air RH value FARRED chamber
+double Temp_R = -1;        // Air temperature RED chamber
+double RH_R = -1;          // Air RH value RED chamber
+double Temp_FR = -1;        // Air temperature FARRED chamber 
+double RH_FR = -1;          // Air RH value FARRED chamber
 
 
 ////// Variables to store sum for eventual averaging
 //Environmental
-float TempSum_R = 0;
-float RHSum_R = 0;
-float TempSum_FR = 0;
-float RHSum_FR = 0;
+double TempSum_R = 0;
+double RHSum_R = 0;
+double TempSum_FR = 0;
+double RHSum_FR = 0;
 // Actinic lamps
 int R_Actinic_Manual_Ctrl_Sum = 0;
 int R_Actinic_ON_Sum = 0;
@@ -300,36 +300,36 @@ int FR_Fan_ON_Sum = 0;
 
 ////// Values to be logged. They will be the average over the last 5 minutes
 //Environmental
-float TempAvg_R = 0;
-float RHAvg_R = 0;
-float TempAvg_FR = 0;
-float RHAvg_FR = 0;
+double TempAvg_R = 0;
+double RHAvg_R = 0;
+double TempAvg_FR = 0;
+double RHAvg_FR = 0;
 // Actinic lamps
-float R_Actinic_Manual_Ctrl_Avg = 0;
-float R_Actinic_ON_Avg = 0;
-float FR_Actinic_Manual_Ctrl_Avg = 0;
-float FR_Actinic_ON_Avg = 0;
+double R_Actinic_Manual_Ctrl_Avg = 0;
+double R_Actinic_ON_Avg = 0;
+double FR_Actinic_Manual_Ctrl_Avg = 0;
+double FR_Actinic_ON_Avg = 0;
 // Farred LEDs
-float FR_1_LEDs_Manual_Ctrl_Avg = 0;
-float FR_1_LEDs_ON_Avg = 0;
-float FR_1_LEDs_PWM_Duty_Cycle_Avg = 0;
-float FR_2_LEDs_Manual_Ctrl_Avg = 0;
-float FR_2_LEDs_ON_Avg = 0;
-float FR_2_LEDs_PWM_Duty_Cycle_Avg = 0;
+double FR_1_LEDs_Manual_Ctrl_Avg = 0;
+double FR_1_LEDs_ON_Avg = 0;
+double FR_1_LEDs_PWM_Duty_Cycle_Avg = 0;
+double FR_2_LEDs_Manual_Ctrl_Avg = 0;
+double FR_2_LEDs_ON_Avg = 0;
+double FR_2_LEDs_PWM_Duty_Cycle_Avg = 0;
 // Fans
-float R_Fan_Manual_Ctrl_Avg = 0;
-float FR_Fan_Manual_Ctrl_Avg = 0;
-float R_Fan_ON_Avg = 0;
-float FR_Fan_ON_Avg = 0;
+double R_Fan_Manual_Ctrl_Avg = 0;
+double FR_Fan_Manual_Ctrl_Avg = 0;
+double R_Fan_ON_Avg = 0;
+double FR_Fan_ON_Avg = 0;
 
 
 ////// PID variables and controls
 int WindowSize = 300;		// Windows size in seconds. Each n seconds the PID sets how much of that time the fan is ON, remainder is OFF. There is a minimum ON time set in setup
 time_t windowStartTime = 0;
 
-const float Kp = 2; // 
-const float Ki = 5; //
-const float Kd = 1; //
+const double Kp = 2; // 
+const double Ki = 5; //
+const double Kd = 1; //
 
 PID R_Temp_PID(&Temp_R, &R_Fan_ON_t, &R_Temp_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
 PID FR_Temp_PID(&Temp_FR, &FR_Fan_ON_t, &FR_Temp_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
@@ -1130,22 +1130,22 @@ void loop() {
 					else if (i == 19) { // FR LEDs 2 PWM
 						FR_2_LEDs_PWM_Duty_Cycle_Avg = buffer.toInt();
 					}
-					else if (i == 20) { // 
+					else if (i == 20) { // Manual Actinic Ctrl in red chamber
 						R_Actinic_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 21) { // 
+					else if (i == 21) { // Manual Actinic Ctrl in farred chamber
 						FR_Actinic_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 22) { // 
+					else if (i == 22) { // Manual LEDs 1 Ctrl in red chamber
 						FR_1_LEDs_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 23) { // 
+					else if (i == 23) { // Manual LEDs 1 Ctrl in farred chamber
 						FR_2_LEDs_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 24) { // 
+					else if (i == 24) { // Manual Fan Ctrl in red chamber
 						R_Fan_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 25) { // 
+					else if (i == 25) { // Manual Fan Ctrl in farred chamber
 						FR_Fan_Manual_Ctrl_Avg = buffer.toInt();
 					}
 					else if (i == 26) { // SensorsOK
@@ -1199,15 +1199,7 @@ void loop() {
 
 
 
-
-
-
-
-
-
-
-
-	delay(1000);
+	delay(500);
 	printWifiStatus();
 
 
