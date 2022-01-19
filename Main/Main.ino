@@ -125,7 +125,15 @@ bool debug = true;
 
 
 ////// Log File & Headers
-String FileName = "";
+const char* FileName[] = { "2020.txt", "2021.txt", "2022.txt", "2023.txt", "2024.txt", "2025.txt", "2026.txt", "2027.txt", "2028.txt", "2029.txt",
+			"2030.txt", "2031.txt", "2032.txt", "2033.txt", "2034.txt", "2035.txt", "2036.txt", "2037.txt", "2038.txt", "2039.txt",
+			"2040.txt", "2041.txt", "2042.txt", "2043.txt", "2044.txt", "2045.txt", "2046.txt", "2047.txt", "2048.txt", "2049.txt",
+			"2050.txt", "2051.txt", "2052.txt", "2053.txt", "2054.txt", "2055.txt", "2056.txt", "2057.txt", "2058.txt", "2059.txt",
+			"2060.txt", "2061.txt", "2062.txt", "2063.txt", "2064.txt", "2065.txt", "2066.txt", "2067.txt", "2068.txt", "2069.txt",
+			"2070.txt", "2071.txt", "2072.txt", "2073.txt", "2074.txt", "2075.txt", "2076.txt", "2077.txt", "2078.txt", "2079.txt",
+			"2080.txt", "2081.txt", "2082.txt", "2083.txt", "2084.txt", "2085.txt", "2086.txt", "2087.txt", "2088.txt", "2089.txt",
+			"2090.txt", "2091.txt", "2092.txt", "2093.txt", "2094.txt", "2095.txt", "2096.txt", "2097.txt", "2098.txt", "2099.txt",
+			"2100.txt" };
 const String Headers = F("UTC_UNIX_t\tLocal_UNIX_t\tyear\tmonth\tday\thour\tminute\tsecond\t\
 R_AirTemp\tR_AirRH\t\
 FR_AirTemp\tFR_AirRH\t\
@@ -796,11 +804,88 @@ void loop() {
 
 
 	////// State 6. Set IoT Control over Lamps and LEDs
+	// Red Chamber Actinic Lamp
+	if (R_Lamp_Manual_Ctrl) { R_Lamp_ON = R_Lamp_Manual_ON; }
+	else {
+		bool Period_1 = false;
+		if (R_Lamp_Period_1) { Period_1 = SetLights(R_Lamp_Period_1_ON, R_Lamp_Period_1_OFF); }
+		bool Period_2 = false;
+		if (R_Lamp_Period_2) { Period_2 = SetLights(R_Lamp_Period_2_ON, R_Lamp_Period_2_OFF); }
+		bool Period_3 = false;
+		if (R_Lamp_Period_3) { Period_3 = SetLights(R_Lamp_Period_3_ON, R_Lamp_Period_3_OFF); }
+		if ( Period_1 || Period_2 || Period_3 ) {
+			R_Lamp_ON = true;
+		}
+		else {
+			R_Lamp_ON = false;
+		}
+	}
+	digitalWrite(R_Chamber_Lamp_PIN, R_Lamp_ON);
+
+	// Farred Chamber Actinic Lamp
+	if (FR_Lamp_Manual_Ctrl) { FR_Lamp_ON = FR_Lamp_Manual_ON; }
+	else {
+		bool Period_1 = false;
+		if (FR_Lamp_Period_1) { Period_1 = SetLights(FR_Lamp_Period_1_ON, FR_Lamp_Period_1_OFF); }
+		bool Period_2 = false;
+		if (FR_Lamp_Period_2) { Period_2 = SetLights(FR_Lamp_Period_2_ON, FR_Lamp_Period_2_OFF); }
+		bool Period_3 = false;
+		if (FR_Lamp_Period_3) { Period_3 = SetLights(FR_Lamp_Period_3_ON, FR_Lamp_Period_3_OFF); }
+		if (Period_1 || Period_2 || Period_3) {
+			FR_Lamp_ON = true;
+		}
+		else {
+			FR_Lamp_ON = false;
+		}
+	}
+	digitalWrite(FR_Chamber_Lamp_PIN, FR_Lamp_ON);
+
+	// Farred LEDs Circuit 1
+	if (FR_1_LEDs_Manual_Ctrl) { FR_1_LEDs_ON = FR_1_LEDs_Manual_ON; }
+	else {
+		bool Period_1 = false;
+		if (FR_1_LEDs_Period_1) { Period_1 = SetLights(FR_1_LEDs_Period_1_ON, FR_1_LEDs_Period_1_OFF); }
+		bool Period_2 = false;
+		if (FR_1_LEDs_Period_2) { Period_2 = SetLights(FR_1_LEDs_Period_2_ON, FR_1_LEDs_Period_2_OFF); }
+		bool Period_3 = false;
+		if (FR_1_LEDs_Period_3) { Period_3 = SetLights(FR_1_LEDs_Period_3_ON, FR_1_LEDs_Period_3_OFF); }
+		if (Period_1 || Period_2 || Period_3) {
+			FR_1_LEDs_ON = true;
+		}
+		else {
+			FR_1_LEDs_ON = false;
+		}
+	}
+	digitalWrite(FR_1_LEDs_PIN, FR_1_LEDs_ON);
+	if (FR_1_LEDs_ON) { analogWrite(FR_1_LEDs_PWM_PIN, FR_1_LEDs_PWM_Duty_Cycle); }
+	else { analogWrite(FR_1_LEDs_PWM_PIN, 0); }
+
+	// Farred LEDs Circuit 2
+	if (FR_2_LEDs_Manual_Ctrl) { FR_2_LEDs_ON = FR_2_LEDs_Manual_ON; }
+	else {
+		bool Period_1 = false;
+		if (FR_2_LEDs_Period_1) { Period_1 = SetLights(FR_2_LEDs_Period_1_ON, FR_2_LEDs_Period_1_OFF); }
+		bool Period_2 = false;
+		if (FR_2_LEDs_Period_2) { Period_2 = SetLights(FR_2_LEDs_Period_2_ON, FR_2_LEDs_Period_2_OFF); }
+		bool Period_3 = false;
+		if (FR_2_LEDs_Period_3) { Period_3 = SetLights(FR_2_LEDs_Period_3_ON, FR_2_LEDs_Period_3_OFF); }
+		if (Period_1 || Period_2 || Period_3) {
+			FR_2_LEDs_ON = true;
+		}
+		else {
+			FR_2_LEDs_ON = false;
+		}
+	}
+	digitalWrite(FR_2_LEDs_PIN, FR_2_LEDs_ON);
+	if (FR_2_LEDs_ON) { analogWrite(FR_2_LEDs_PWM_PIN, FR_2_LEDs_PWM_Duty_Cycle); }
+	else { analogWrite(FR_2_LEDs_PWM_PIN, 0); }
+
+	
+	
 
 
 
-
-
+	
 	////// State 7. Test if it is time to compute  averages and record in SD card (each 5 minutes)
 	if (((m % 5) == 0) && (m != LastLog) && (SumNum > 0)) {
 		// Calculate averages
@@ -813,9 +898,8 @@ void loop() {
 
 
 		// Open Year LogFile (create if not available)
-		FileName = (String)yr + ".txt";
-		if (!LogFile.exists(FileName)) {
-			LogFile.open((FileName), O_RDWR | O_CREAT); // Create file
+		if (!LogFile.exists(FileName[yr - 2020])) {
+			LogFile.open((FileName[yr - 2020]), O_RDWR | O_CREAT); // Create file
 
 			// Add Metadata
 			LogFile.println(F("Start position of last line send to IoT:\t1"));
@@ -837,7 +921,7 @@ void loop() {
 			LogFile.println(Headers); // Add Headers
 		}
 		else {
-			LogFile.open(FileName, O_RDWR); // Open file
+			LogFile.open(FileName[yr - 2020], O_RDWR); // Open file
 			LogFile.seekEnd(); // Set position to end of file
 		}
 

@@ -422,6 +422,7 @@ char 	*strchrnul(const char *, int) {
 #endif
 
 #include "Main.ino"
+#include "Light Functions.ino"
 #include "Time Functions.ino"
 #endif
 #endif
