@@ -77,7 +77,7 @@ const int SD_SCK_MHZ = 10;	// it works till 12 MHz in M0 board
 SdExFat sd;
 ExFile LogFile;
 ExFile root;
-char line[250];
+char line[500];
 String str = "";
 int position = 0;
 
@@ -271,6 +271,7 @@ double Temp_R = -1;        // Air temperature RED chamber
 double RH_R = -1;          // Air RH value RED chamber
 double Temp_FR = -1;        // Air temperature FARRED chamber 
 double RH_FR = -1;          // Air RH value FARRED chamber
+bool AC_OK = true;			// Monitor AC power supply OK
 
 
 ////// Variables to store sum for eventual averaging
@@ -279,6 +280,7 @@ double TempSum_R = 0;
 double RHSum_R = 0;
 double TempSum_FR = 0;
 double RHSum_FR = 0;
+int AC_OK_Sum = 0;
 // Actinic lamps
 int R_Actinic_Manual_Ctrl_Sum = 0;
 int R_Actinic_ON_Sum = 0;
@@ -304,6 +306,7 @@ double TempAvg_R = 0;
 double RHAvg_R = 0;
 double TempAvg_FR = 0;
 double RHAvg_FR = 0;
+double AC_OK_Avg = 0;
 // Actinic lamps
 double R_Actinic_Manual_Ctrl_Avg = 0;
 double R_Actinic_ON_Avg = 0;
@@ -399,8 +402,13 @@ void setup() {
 
 
 	////// Initialize SD card
-	if (debug) { Serial.println(F("Setting SD card...")); }
-	sd.begin(SD_CS_PIN, SD_SCK_MHZ);
+	if (debug) {
+		Serial.print(F("Starting SD card: "));
+		Serial.println( sd.begin(SD_CS_PIN, SD_SCK_MHZ) );
+	}
+	else {
+		sd.begin(SD_CS_PIN, SD_SCK_MHZ);
+	}
 	// Reserve RAM memory for large and dynamic String object
 	// used in SD file write/read
 	// (prevents heap RAM framgentation)
@@ -408,155 +416,449 @@ void setup() {
 	str.reserve(HeaderN * 7);
 
 
+	////// Load Control variables from SD card
+	if (true) { // (just a container to collapse/organize code)
+		debug = (bool)Get_Setpoint("Debug.txt");
+		// Red Actinic Light
+		R_Actinic_Manual_Ctrl = (bool)Get_Setpoint("R_Actinic_Manual_Ctrl.txt");
+		R_Actinic_Manual_ON = (bool)Get_Setpoint("R_Actinic_Manual_ON.txt");
+		R_Actinic_Period_1 = (bool)Get_Setpoint("R_Actinic_Period_1.txt");
+		R_Actinic_Period_2 = (bool)Get_Setpoint("R_Actinic_Period_2.txt");
+		R_Actinic_Period_3 = (bool)Get_Setpoint("R_Actinic_Period_3.txt");
+		R_Actinic_Period_1_ON = (int)Get_Setpoint("R_Actinic_Period_1_ON.txt");
+		R_Actinic_Period_2_ON = (int)Get_Setpoint("R_Actinic_Period_2_ON.txt");
+		R_Actinic_Period_3_ON = (int)Get_Setpoint("R_Actinic_Period_3_ON.txt");
+		R_Actinic_Period_1_OFF = (int)Get_Setpoint("R_Actinic_Period_1_OFF.txt");
+		R_Actinic_Period_2_OFF = (int)Get_Setpoint("R_Actinic_Period_2_OFF.txt");
+		R_Actinic_Period_3_OFF = (int)Get_Setpoint("R_Actinic_Period_3_OFF.txt");
+		// Far-red Actinic Light
+		FR_Actinic_Manual_Ctrl = (bool)Get_Setpoint("FR_Actinic_Manual_Ctrl.txt");
+		FR_Actinic_Manual_ON = (bool)Get_Setpoint("FR_Actinic_Manual_ON.txt");
+		FR_Actinic_Period_1 = (bool)Get_Setpoint("FR_Actinic_Period_1.txt");
+		FR_Actinic_Period_2 = (bool)Get_Setpoint("FR_Actinic_Period_2.txt");
+		FR_Actinic_Period_3 = (bool)Get_Setpoint("FR_Actinic_Period_3.txt");
+		FR_Actinic_Period_1_ON = (int)Get_Setpoint("FR_Actinic_Period_1_ON.txt");
+		FR_Actinic_Period_2_ON = (int)Get_Setpoint("FR_Actinic_Period_2_ON.txt");
+		FR_Actinic_Period_3_ON = (int)Get_Setpoint("FR_Actinic_Period_3_ON.txt");
+		FR_Actinic_Period_1_OFF = (int)Get_Setpoint("FR_Actinic_Period_1_OFF.txt");
+		FR_Actinic_Period_2_OFF = (int)Get_Setpoint("FR_Actinic_Period_2_OFF.txt");
+		FR_Actinic_Period_3_OFF = (int)Get_Setpoint("FR_Actinic_Period_3_OFF.txt");
+		// Environmental control
+		Temp_Ctrl = (bool)Get_Setpoint("Temp_Ctrl.txt");
+		R_Temp_Set = Get_Setpoint("R_Temp_Set.txt");
+		FR_Temp_Set = Get_Setpoint("FR_Temp_Set.txt");
+		R_RH_Set = Get_Setpoint("R_RH_Set.txt");
+		FR_RH_Set = Get_Setpoint("FR_RH_Set.txt");
+		// Far-red LEDs 1
+		FR_1_LEDs_Manual_Ctrl = (bool)Get_Setpoint("FR_1_LEDs_Manual_Ctrl.txt");
+		FR_1_LEDs_Manual_ON = (bool)Get_Setpoint("FR_1_LEDs_Manual_ON.txt");
+		FR_1_LEDs_PWM_Duty_Cycle = (int)Get_Setpoint("FR_1_LEDs_PWM_Duty_Cycle.txt");
+		FR_1_LEDs_Period_1 = (bool)Get_Setpoint("FR_1_LEDs_Period_1.txt");
+		FR_1_LEDs_Period_2 = (bool)Get_Setpoint("FR_1_LEDs_Period_2.txt");
+		FR_1_LEDs_Period_3 = (bool)Get_Setpoint("FR_1_LEDs_Period_3.txt");
+		FR_1_LEDs_Period_1_ON = (int)Get_Setpoint("FR_1_LEDs_Period_1_ON.txt");
+		FR_1_LEDs_Period_2_ON = (int)Get_Setpoint("FR_1_LEDs_Period_2_ON.txt");
+		FR_1_LEDs_Period_3_ON = (int)Get_Setpoint("FR_1_LEDs_Period_3_ON.txt");
+		FR_1_LEDs_Period_1_OFF = (int)Get_Setpoint("FR_1_LEDs_Period_1_OFF.txt");
+		FR_1_LEDs_Period_2_OFF = (int)Get_Setpoint("FR_1_LEDs_Period_2_OFF.txt");
+		FR_1_LEDs_Period_3_OFF = (int)Get_Setpoint("FR_1_LEDs_Period_3_OFF.txt");
+		// Far-red LEDs 2
+		FR_2_LEDs_Manual_Ctrl = (bool)Get_Setpoint("FR_2_LEDs_Manual_Ctrl.txt");
+		FR_2_LEDs_Manual_ON = (bool)Get_Setpoint("FR_2_LEDs_Manual_ON.txt");
+		FR_2_LEDs_PWM_Duty_Cycle = (int)Get_Setpoint("FR_2_LEDs_PWM_Duty_Cycle.txt");
+		FR_2_LEDs_Period_1 = (bool)Get_Setpoint("FR_2_LEDs_Period_1.txt");
+		FR_2_LEDs_Period_2 = (bool)Get_Setpoint("FR_2_LEDs_Period_2.txt");
+		FR_2_LEDs_Period_3 = (bool)Get_Setpoint("FR_2_LEDs_Period_3.txt");
+		FR_2_LEDs_Period_1_ON = (int)Get_Setpoint("FR_2_LEDs_Period_1_ON.txt");
+		FR_2_LEDs_Period_2_ON = (int)Get_Setpoint("FR_2_LEDs_Period_2_ON.txt");
+		FR_2_LEDs_Period_3_ON = (int)Get_Setpoint("FR_2_LEDs_Period_3_ON.txt");
+		FR_2_LEDs_Period_1_OFF = (int)Get_Setpoint("FR_2_LEDs_Period_1_OFF.txt");
+		FR_2_LEDs_Period_2_OFF = (int)Get_Setpoint("FR_2_LEDs_Period_2_OFF.txt");
+		FR_2_LEDs_Period_3_OFF = (int)Get_Setpoint("FR_2_LEDs_Period_3_OFF.txt");
+	}
+	
+
 	////// Configure IoT
 	if (debug) { Serial.println(F("Configuring IoT...")); }
 	thing.add_wifi(ssid, password);
 
-	// Define input resources
-	thing["Debug"] << [](pson& in) {
-		if (in.is_empty()) { in = debug; }
-		else { debug = in; }
-	};
-	thing["R_Actinic_Ctrl"] << [](pson& in) {
-		if (in.is_empty()) {
-			in["R_Actinic_Manual_Ctrl"] = R_Actinic_Manual_Ctrl;
-			in["R_Actinic_Manual_ON"] = R_Actinic_Manual_ON;
-			in["R_Actinic_Period_1"] = R_Actinic_Period_1;
-			in["R_Actinic_Period_2"] = R_Actinic_Period_2;
-			in["R_Actinic_Period_3"] = R_Actinic_Period_3;
-			in["R_Actinic_Period_1_ON"] = R_Actinic_Period_1_ON;
-			in["R_Actinic_Period_2_ON"] = R_Actinic_Period_2_ON;
-			in["R_Actinic_Period_3_ON"] = R_Actinic_Period_3_ON;
-			in["R_Actinic_Period_1_OFF"] = R_Actinic_Period_1_OFF;
-			in["R_Actinic_Period_2_OFF"] = R_Actinic_Period_2_OFF;
-			in["R_Actinic_Period_3_OFF"] = R_Actinic_Period_3_OFF;
-		}
-		else {
-			R_Actinic_Manual_Ctrl = in["R_Actinic_Manual_Ctrl"];
-			R_Actinic_Manual_ON = in["R_Actinic_Manual_ON"];
-			R_Actinic_Period_1 = in["R_Actinic_Period_1"];
-			R_Actinic_Period_2 = in["R_Actinic_Period_2"];
-			R_Actinic_Period_3 = in["R_Actinic_Period_3"];
-			R_Actinic_Period_1_ON = in["R_Actinic_Period_1_ON"];
-			R_Actinic_Period_2_ON = in["R_Actinic_Period_2_ON"];
-			R_Actinic_Period_3_ON = in["R_Actinic_Period_3_ON"];
-			R_Actinic_Period_1_OFF = in["R_Actinic_Period_1_OFF"];
-			R_Actinic_Period_2_OFF = in["R_Actinic_Period_2_OFF"];
-			R_Actinic_Period_3_OFF = in["R_Actinic_Period_3_OFF"];
-		}
-	};
-	thing["FR_Actinic_Ctrl"] << [](pson& in) {
-		if (in.is_empty()) {
-			in["FR_Actinic_Manual_Ctrl"] = FR_Actinic_Manual_Ctrl;
-			in["FR_Actinic_Manual_ON"] = FR_Actinic_Manual_ON;
-			in["FR_Actinic_Period_1"] = FR_Actinic_Period_1;
-			in["FR_Actinic_Period_2"] = FR_Actinic_Period_2;
-			in["FR_Actinic_Period_3"] = FR_Actinic_Period_3;
-			in["FR_Actinic_Period_1_ON"] = FR_Actinic_Period_1_ON;
-			in["FR_Actinic_Period_2_ON"] = FR_Actinic_Period_2_ON;
-			in["FR_Actinic_Period_3_ON"] = FR_Actinic_Period_3_ON;
-			in["FR_Actinic_Period_1_OFF"] = FR_Actinic_Period_1_OFF;
-			in["FR_Actinic_Period_2_OFF"] = FR_Actinic_Period_2_OFF;
-			in["FR_Actinic_Period_3_OFF"] = FR_Actinic_Period_3_OFF;
-		}
-		else {
-			FR_Actinic_Manual_Ctrl = in["FR_Actinic_Manual_Ctrl"];
-			FR_Actinic_Manual_ON = in["FR_Actinic_Manual_ON"];
-			FR_Actinic_Period_1 = in["FR_Actinic_Period_1"];
-			FR_Actinic_Period_2 = in["FR_Actinic_Period_2"];
-			FR_Actinic_Period_3 = in["FR_Actinic_Period_3"];
-			FR_Actinic_Period_1_ON = in["FR_Actinic_Period_1_ON"];
-			FR_Actinic_Period_2_ON = in["FR_Actinic_Period_2_ON"];
-			FR_Actinic_Period_3_ON = in["FR_Actinic_Period_3_ON"];
-			FR_Actinic_Period_1_OFF = in["FR_Actinic_Period_1_OFF"];
-			FR_Actinic_Period_2_OFF = in["FR_Actinic_Period_2_OFF"];
-			FR_Actinic_Period_3_OFF = in["FR_Actinic_Period_3_OFF"];
-		}
-	};
-	thing["Env_Ctrl"] << [](pson& in) {
-		if (in.is_empty()) {
-			in["Temp_Ctrl"] = Temp_Ctrl;
-			in["R_Temp_Set"] = R_Temp_Set;
-			in["FR_Temp_Set"] = FR_Temp_Set;
-			in["R_RH_Set"] = R_RH_Set;
-			in["FR_RH_Set"] = FR_RH_Set;
-			in["R_Fan_ON"] = R_Fan_ON;
-			in["FR_Fan_ON"] = FR_Fan_ON;
 
-		}
-		else {
-			Temp_Ctrl = in["Temp_Ctrl"];
-			R_Temp_Set = in["R_Temp_Set"];
-			FR_Temp_Set = in["FR_Temp_Set"];
-			R_RH_Set = in["R_RH_Set"];
-			FR_RH_Set = in["FR_RH_Set"];
-			R_Fan_ON = in["R_Fan_ON"];
-			FR_Fan_ON = in["FR_Fan_ON"];
+	////// Define input resources
+	if (true) {	// (just a container to collapse/organize code)
+		// Debug
+		thing["Debug"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("Debug.txt"); }
+			else {
+				Set_Setpoint("Debug.txt", (float)in);
+				debug = in;
+			}
+		};
+		// Red Actinic Light
+		thing["R_Actinic_Manual_Ctrl"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("R_Actinic_Manual_Ctrl.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Manual_Ctrl.txt", (float)in);
+				R_Actinic_Manual_Ctrl = in;
+			}
+		};
+		thing["R_Actinic_Manual_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("R_Actinic_Manual_ON.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Manual_ON.txt", (float)in);
+				R_Actinic_Manual_ON = in;
+			}
+		};
+		thing["R_Actinic_Period_1"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("R_Actinic_Period_1.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Period_1.txt", (float)in);
+				R_Actinic_Period_1 = in;
+			}
+		};
+		thing["R_Actinic_Period_2"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("R_Actinic_Period_2.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Period_2.txt", (float)in);
+				R_Actinic_Period_2 = in;
+			}
+		};
+		thing["R_Actinic_Period_3"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("R_Actinic_Period_3.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Period_3.txt", (float)in);
+				R_Actinic_Period_3 = in;
+			}
+		};
+		thing["R_Actinic_Period_1_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_1_ON.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Period_1_ON.txt", (float)in);
+				R_Actinic_Period_1_ON = in;
+			}
+		};
+		thing["R_Actinic_Period_2_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_2_ON.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Period_2_ON.txt", (float)in);
+				R_Actinic_Period_2_ON = in;
+			}
+		};
+		thing["R_Actinic_Period_3_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_3_ON.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Period_3_ON.txt", (float)in);
+				R_Actinic_Period_3_ON = in;
+			}
+		};
+		thing["R_Actinic_Period_1_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_1_OFF.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Period_1_OFF.txt", (float)in);
+				R_Actinic_Period_1_OFF = in;
+			}
+		};
+		thing["R_Actinic_Period_2_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_2_OFF.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Period_2_OFF.txt", (float)in);
+				R_Actinic_Period_2_OFF = in;
+			}
+		};
+		thing["R_Actinic_Period_3_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_3_OFF.txt"); }
+			else {
+				Set_Setpoint("R_Actinic_Period_3_OFF.txt", (float)in);
+				R_Actinic_Period_3_OFF = in;
+			}
+		};
+		// Far-red Actinic Light
+		thing["FR_Actinic_Manual_Ctrl"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_Actinic_Manual_Ctrl.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Manual_Ctrl.txt", (float)in);
+				FR_Actinic_Manual_Ctrl = in;
+			}
+		};
+		thing["FR_Actinic_Manual_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_Actinic_Manual_ON.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Manual_ON.txt", (float)in);
+				FR_Actinic_Manual_ON = in;
+			}
+		};
+		thing["FR_Actinic_Period_1"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_Actinic_Period_1.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Period_1.txt", (float)in);
+				FR_Actinic_Period_1 = in;
+			}
+		};
+		thing["FR_Actinic_Period_2"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_Actinic_Period_2.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Period_2.txt", (float)in);
+				FR_Actinic_Period_2 = in;
+			}
+		};
+		thing["FR_Actinic_Period_3"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_Actinic_Period_3.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Period_3.txt", (float)in);
+				FR_Actinic_Period_3 = in;
+			}
+		};
+		thing["FR_Actinic_Period_1_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_1_ON.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Period_1_ON.txt", (float)in);
+				FR_Actinic_Period_1_ON = in;
+			}
+		};
+		thing["FR_Actinic_Period_2_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_2_ON.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Period_2_ON.txt", (float)in);
+				FR_Actinic_Period_2_ON = in;
+			}
+		};
+		thing["FR_Actinic_Period_3_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_3_ON.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Period_3_ON.txt", (float)in);
+				FR_Actinic_Period_3_ON = in;
+			}
+		};
+		thing["FR_Actinic_Period_1_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_1_OFF.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Period_1_OFF.txt", (float)in);
+				FR_Actinic_Period_1_OFF = in;
+			}
+		};
+		thing["FR_Actinic_Period_2_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_2_OFF.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Period_2_OFF.txt", (float)in);
+				FR_Actinic_Period_2_OFF = in;
+			}
+		};
+		thing["FR_Actinic_Period_3_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_3_OFF.txt"); }
+			else {
+				Set_Setpoint("FR_Actinic_Period_3_OFF.txt", (float)in);
+				FR_Actinic_Period_3_OFF = in;
+			}
+		};
+		// Environmental control
+		thing["Temp_Ctrl"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("Temp_Ctrl.txt"); }
+			else {
+				Set_Setpoint("Temp_Ctrl.txt", (float)in);
+				Temp_Ctrl = in;
+			}
+		};
+		thing["R_Temp_Set"] << [](pson& in) {
+			if (in.is_empty()) { in = Get_Setpoint("R_Temp_Set.txt"); }
+			else {
+				Set_Setpoint("R_Temp_Set.txt", (float)in);
+				R_Temp_Set = in;
+			}
+		};
+		thing["FR_Temp_Set"] << [](pson& in) {
+			if (in.is_empty()) { in = Get_Setpoint("FR_Temp_Set.txt"); }
+			else {
+				Set_Setpoint("FR_Temp_Set.txt", (float)in);
+				FR_Temp_Set = in;
+			}
+		};
+		thing["R_RH_Set"] << [](pson& in) {
+			if (in.is_empty()) { in = Get_Setpoint("R_RH_Set.txt"); }
+			else {
+				Set_Setpoint("R_RH_Set.txt", (float)in);
+				R_RH_Set = in;
+			}
+		};
+		thing["FR_RH_Set"] << [](pson& in) {
+			if (in.is_empty()) { in = Get_Setpoint("FR_RH_Set.txt"); }
+			else {
+				Set_Setpoint("FR_RH_Set.txt", (float)in);
+				FR_RH_Set = in;
+			}
+		};
+		// Far-red LEDs 1
+		thing["FR_1_LEDs_Manual_Ctrl"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_1_LEDs_Manual_Ctrl.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Manual_Ctrl.txt", (float)in);
+				FR_1_LEDs_Manual_Ctrl = in;
+			}
+		};
+		thing["FR_1_LEDs_Manual_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_1_LEDs_Manual_ON.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Manual_ON.txt", (float)in);
+				FR_1_LEDs_Manual_ON = in;
+			}
+		};
+		thing["FR_1_LEDs_PWM_Duty_Cycle"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_PWM_Duty_Cycle.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_PWM_Duty_Cycle.txt", (float)in);
+				FR_1_LEDs_PWM_Duty_Cycle = in;
+			}
+		};
+		thing["FR_1_LEDs_Period_1"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_1_LEDs_Period_1.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Period_1.txt", (float)in);
+				FR_1_LEDs_Period_1 = in;
+			}
+		};
+		thing["FR_1_LEDs_Period_2"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_1_LEDs_Period_2.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Period_2.txt", (float)in);
+				FR_1_LEDs_Period_2 = in;
+			}
+		};
+		thing["FR_1_LEDs_Period_3"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_1_LEDs_Period_3.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Period_3.txt", (float)in);
+				FR_1_LEDs_Period_3 = in;
+			}
+		};
+		thing["FR_1_LEDs_Period_1_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_1_ON.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Period_1_ON.txt", (float)in);
+				FR_1_LEDs_Period_1_ON = in;
+			}
+		};
+		thing["FR_1_LEDs_Period_2_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_2_ON.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Period_2_ON.txt", (float)in);
+				FR_1_LEDs_Period_2_ON = in;
+			}
+		};
+		thing["FR_1_LEDs_Period_3_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_3_ON.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Period_3_ON.txt", (float)in);
+				FR_1_LEDs_Period_3_ON = in;
+			}
+		};
+		thing["FR_1_LEDs_Period_1_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_1_OFF.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Period_1_OFF.txt", (float)in);
+				FR_1_LEDs_Period_1_OFF = in;
+			}
+		};
+		thing["FR_1_LEDs_Period_2_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_2_OFF.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Period_2_OFF.txt", (float)in);
+				FR_1_LEDs_Period_2_OFF = in;
+			}
+		};
+		thing["FR_1_LEDs_Period_3_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_3_OFF.txt"); }
+			else {
+				Set_Setpoint("FR_1_LEDs_Period_3_OFF.txt", (float)in);
+				FR_1_LEDs_Period_3_OFF = in;
+			}
+		};
+		// Far-red LEDs 2
+		thing["FR_2_LEDs_Manual_Ctrl"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_2_LEDs_Manual_Ctrl.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Manual_Ctrl.txt", (float)in);
+				FR_2_LEDs_Manual_Ctrl = in;
+			}
+		};
+		thing["FR_2_LEDs_Manual_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_2_LEDs_Manual_ON.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Manual_ON.txt", (float)in);
+				FR_2_LEDs_Manual_ON = in;
+			}
+		};
+		thing["FR_2_LEDs_PWM_Duty_Cycle"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_PWM_Duty_Cycle.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_PWM_Duty_Cycle.txt", (float)in);
+				FR_2_LEDs_PWM_Duty_Cycle = in;
+			}
+		};
+		thing["FR_2_LEDs_Period_1"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_2_LEDs_Period_1.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Period_1.txt", (float)in);
+				FR_2_LEDs_Period_1 = in;
+			}
+		};
+		thing["FR_2_LEDs_Period_2"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_2_LEDs_Period_2.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Period_2.txt", (float)in);
+				FR_2_LEDs_Period_2 = in;
+			}
+		};
+		thing["FR_2_LEDs_Period_3"] << [](pson& in) {
+			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_2_LEDs_Period_3.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Period_3.txt", (float)in);
+				FR_2_LEDs_Period_3 = in;
+			}
+		};
+		thing["FR_2_LEDs_Period_1_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_1_ON.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Period_1_ON.txt", (float)in);
+				FR_2_LEDs_Period_1_ON = in;
+			}
+		};
+		thing["FR_2_LEDs_Period_2_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_2_ON.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Period_2_ON.txt", (float)in);
+				FR_2_LEDs_Period_2_ON = in;
+			}
+		};
+		thing["FR_2_LEDs_Period_3_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_3_ON.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Period_3_ON.txt", (float)in);
+				FR_2_LEDs_Period_3_ON = in;
+			}
+		};
+		thing["FR_2_LEDs_Period_1_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_1_OFF.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Period_1_OFF.txt", (float)in);
+				FR_2_LEDs_Period_1_OFF = in;
+			}
+		};
+		thing["FR_2_LEDs_Period_2_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_2_OFF.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Period_2_OFF.txt", (float)in);
+				FR_2_LEDs_Period_2_OFF = in;
+			}
+		};
+		thing["FR_2_LEDs_Period_3_OFF"] << [](pson& in) {
+			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_3_OFF.txt"); }
+			else {
+				Set_Setpoint("FR_2_LEDs_Period_3_OFF.txt", (float)in);
+				FR_2_LEDs_Period_3_OFF = in;
+			}
+		};
+	}
 
-		}
-	};
-	thing["FR_1_LEDs_Ctrl"] << [](pson& in) {
-		if (in.is_empty()) {
-			in["FR_1_LEDs_Manual_Ctrl"] = FR_1_LEDs_Manual_Ctrl;
-			in["FR_1_LEDs_Manual_ON"] = FR_1_LEDs_Manual_ON;
-			in["FR_1_LEDs_PWM_Duty_Cycle "] = FR_1_LEDs_PWM_Duty_Cycle;
-			in["FR_1_LEDs_Period_1"] = FR_1_LEDs_Period_1;
-			in["FR_1_LEDs_Period_2"] = FR_1_LEDs_Period_2;
-			in["FR_1_LEDs_Period_3"] = FR_1_LEDs_Period_3;
-			in["FR_1_LEDs_Period_1_ON"] = FR_1_LEDs_Period_1_ON;
-			in["FR_1_LEDs_Period_2_ON"] = FR_1_LEDs_Period_2_ON;
-			in["FR_1_LEDs_Period_3_ON"] = FR_1_LEDs_Period_3_ON;
-			in["FR_1_LEDs_Period_1_OFF"] = FR_1_LEDs_Period_1_OFF;
-			in["FR_1_LEDs_Period_2_OFF"] = FR_1_LEDs_Period_2_OFF;
-			in["FR_1_LEDs_Period_3_OFF"] = FR_1_LEDs_Period_3_OFF;
-		}
-		else {
-			FR_1_LEDs_Manual_Ctrl = in["FR_1_LEDs_Manual_Ctrl"];
-			FR_1_LEDs_Manual_ON = in["FR_1_LEDs_Manual_ON"];
-			FR_1_LEDs_PWM_Duty_Cycle = in["FR_1_LEDs_PWM_Duty_Cycle"];
-			FR_1_LEDs_Period_1 = in["FR_1_LEDs_Period_1"];
-			FR_1_LEDs_Period_2 = in["FR_1_LEDs_Period_2"];
-			FR_1_LEDs_Period_3 = in["FR_1_LEDs_Period_3"];
-			FR_1_LEDs_Period_1_ON = in["FR_1_LEDs_Period_1_ON"];
-			FR_1_LEDs_Period_2_ON = in["FR_1_LEDs_Period_2_ON"];
-			FR_1_LEDs_Period_3_ON = in["FR_1_LEDs_Period_3_ON"];
-			FR_1_LEDs_Period_1_OFF = in["FR_1_LEDs_Period_1_OFF"];
-			FR_1_LEDs_Period_2_OFF = in["FR_1_LEDs_Period_2_OFF"];
-			FR_1_LEDs_Period_3_OFF = in["FR_1_LEDs_Period_3_OFF"];
-		}
-	};
-	thing["FR_2_LEDs_Ctrl"] << [](pson& in) {
-		if (in.is_empty()) {
-			in["FR_2_LEDs_Manual_Ctrl"] = FR_2_LEDs_Manual_Ctrl;
-			in["FR_2_LEDs_Manual_ON"] = FR_2_LEDs_Manual_ON;
-			in["FR_2_LEDs_PWM_Duty_Cycle "] = FR_2_LEDs_PWM_Duty_Cycle;
-			in["FR_2_LEDs_Period_1"] = FR_2_LEDs_Period_1;
-			in["FR_2_LEDs_Period_2"] = FR_2_LEDs_Period_2;
-			in["FR_2_LEDs_Period_3"] = FR_2_LEDs_Period_3;
-			in["FR_2_LEDs_Period_1_ON"] = FR_2_LEDs_Period_1_ON;
-			in["FR_2_LEDs_Period_2_ON"] = FR_2_LEDs_Period_2_ON;
-			in["FR_2_LEDs_Period_3_ON"] = FR_2_LEDs_Period_3_ON;
-			in["FR_2_LEDs_Period_1_OFF"] = FR_2_LEDs_Period_1_OFF;
-			in["FR_2_LEDs_Period_2_OFF"] = FR_2_LEDs_Period_2_OFF;
-			in["FR_2_LEDs_Period_3_OFF"] = FR_2_LEDs_Period_3_OFF;
-		}
-		else {
-			FR_2_LEDs_Manual_Ctrl = in["FR_2_LEDs_Manual_Ctrl"];
-			FR_2_LEDs_Manual_ON = in["FR_2_LEDs_Manual_ON"];
-			FR_2_LEDs_PWM_Duty_Cycle = in["FR_2_LEDs_PWM_Duty_Cycle"];
-			FR_2_LEDs_Period_1 = in["FR_2_LEDs_Period_1"];
-			FR_2_LEDs_Period_2 = in["FR_2_LEDs_Period_2"];
-			FR_2_LEDs_Period_3 = in["FR_2_LEDs_Period_3"];
-			FR_2_LEDs_Period_1_ON = in["FR_2_LEDs_Period_1_ON"];
-			FR_2_LEDs_Period_2_ON = in["FR_2_LEDs_Period_2_ON"];
-			FR_2_LEDs_Period_3_ON = in["FR_2_LEDs_Period_3_ON"];
-			FR_2_LEDs_Period_1_OFF = in["FR_2_LEDs_Period_1_OFF"];
-			FR_2_LEDs_Period_2_OFF = in["FR_2_LEDs_Period_2_OFF"];
-			FR_2_LEDs_Period_3_OFF = in["FR_2_LEDs_Period_3_OFF"];
-		}
-	};
 
-	// Define output resources
+	////// Define output resources
 	thing["RT_R_Actinic_ON"] >> [](pson& out) { out = R_Actinic_ON; };
 	thing["RT_FR_Actinic_ON"] >> [](pson& out) { out = FR_Actinic_ON; };
 	thing["RT_FR_1_LEDs_ON"] >> [](pson& out) { out = FR_1_LEDs_ON; };
@@ -567,6 +869,8 @@ void setup() {
 	thing["RT_RH_Red"] >> [](pson& out) { out = RH_R; };
 	thing["RT_Temp_FarRed"] >> [](pson& out) { out = Temp_FR; };
 	thing["RT_RH_FarRed"] >> [](pson& out) { out = RH_FR; };
+	thing["AC_OK"] >> [](pson& out) { out = AC_OK; };
+	
 
 	thing["Avg_Data"] >> [](pson& out) {
 		out["Time_Stamp"] = SD_local_t;
@@ -587,7 +891,7 @@ void setup() {
 		out["Red_Chamber_Fan_Manual_Ctrl"] = R_Fan_Manual_Ctrl_Avg;
 		out["Red_Chamber_Fan_ON"] = R_Fan_ON_Avg;
 		out["FarRed_Chamber_Fan_Manual_Ctrl"] = FR_Fan_Manual_Ctrl_Avg;
-		out["Red_Chamber_Fan_ON"] = FR_Fan_ON_Avg;
+		out["FarRed_Chamber_Fan_ON"] = FR_Fan_ON_Avg;
 		out["Sensors_OK"] = SensorsOKIoT;
 	};
 
@@ -1199,7 +1503,7 @@ void loop() {
 
 
 
-	delay(500);
+	//delay(500);
 	printWifiStatus();
 
 
