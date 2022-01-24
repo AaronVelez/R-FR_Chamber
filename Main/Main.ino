@@ -103,8 +103,8 @@ DFRobot_SHT3x::sRHAndTemp_t sht3x_data;
 
 
 ////// Library for I2C ADC
-#include <Adafruit_ADS1X15.h>
-Adafruit_ADS1015 ads1015;
+#include <SparkFun_ADS1015_Arduino_Library.h>
+ADS1015 adcSensor;
 
 
 ////// PID library
@@ -192,7 +192,7 @@ time_t t_WiFiCnxTry = 0;      // Last time a (re)connection to internet happened
 const int WiFiCnx_frq = 30;  // (re)connection to internet frequency in seconds
 
 byte SensorsOK = B00000000;     // Byte variable to store real time sensor status
-byte SensorsOKAvg = B00001111;  // Byte variable to store SD card average sensor status
+byte SensorsOKAvg = B00011111;  // Byte variable to store SD card average sensor status
 int SensorsOKIoT = 0;           // Variable to send sensor status in decimal format
 
 time_t t_DataBucket = 0;             // Last time Data was sent to bucket (in UNIX time format) 
@@ -361,6 +361,39 @@ void setup() {
 	SPI.begin();
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	Serial.print(F("SRAM memory: "));
+	Serial.println(freeMemory());
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	////// Start WiFi
 	if (debug = true) { Serial.print(F("Conecting to WiFi")); }
 	WiFi.setPins(SPIWIFI_SS, SPIWIFI_ACK, ESP32_RESETN, ESP32_GPIO0, &SPIWIFI);
@@ -486,6 +519,21 @@ void setup() {
 		FR_2_LEDs_Period_3_OFF = (int)Get_Setpoint("FR_2_LEDs_Period_3_OFF.txt");
 	}
 	
+
+
+
+
+
+
+
+	Serial.print(F("SRAM memory: "));
+	Serial.println(freeMemory());
+
+
+
+
+
+
 
 	////// Configure IoT
 	if (debug) { Serial.println(F("Configuring IoT...")); }
@@ -936,9 +984,14 @@ void setup() {
 
 
 	// Start I2C ADC
-	ads1015.begin();				// default address is 0x48
-	ads1015.setGain(GAIN_ONE);		// 1x gain   +/- 4.096V  1 bit = 2mV
-
+	if (debug) { Serial.println(F("Starting I2C ADC...")); }
+	adcSensor.begin();							// default address is 0x48
+	adcSensor.setGain(ADS1015_CONFIG_PGA_1);	// 1x gain   +/- 4.096V  1 bit = 2mV		
+	if (debug) {
+		Serial.print(F("ADC conected: "));
+		Serial.println(adcSensor.isConnected());
+	}
+	
 
 	////// Start SHT31 Temp and RH sensor
 	// Red Chamber sensor
@@ -1031,19 +1084,6 @@ void loop() {
 	////// State 4. Test if it is time to read Temp, RH and Fan values
 	////// AND record sensor values for 5-minute averages (each 20 seconds)
 	if ((s % 20 == 0) && (s != LastSum)) {
-		// Read I2C ADC
-		// With gain 1x, 1 bit  = 2mV
-		// IF AC is OK, supplu voltage is 5V, and after voltage divider is 2.5V.
-		// Threshold to consider AC OK is 4.75V
-		if ((ads1015.readADC_SingleEnded(0) * 2) > 2375) {
-			// M0 supply voltage is higher than 4.75V (2375 mV x 2)
-			// Mark AC supply OK
-			AC_OK = true;
-		}
-		else { AC_OK = false; }
-		// Measure Backup Battery voltage
-		BatVolt = ads1015.readADC_SingleEnded(1) * 2;	
-
 
 		// Read Red chamber Temp/RH sensor
 		digitalWrite(I2C_Select_0_PIN, LOW);
@@ -1078,9 +1118,30 @@ void loop() {
 		}
 		digitalWrite(I2C_Select_0_PIN, LOW);
 
+		// Read I2C ADC
+		// With gain 1x, 1 bit  = 2mV
+		// IF AC is OK, supplu voltage is 5V, and after voltage divider is 2.5V.
+		// Threshold to consider AC OK is 4.75V
+		if ((adcSensor.getSingleEnded(0) * adcSensor.getMultiplier()) > 2375) {
+			// M0 supply voltage is higher than 4.75V (2375 mV x 2)
+			// Mark AC supply OK
+			AC_OK = true;
+		}
+		else { AC_OK = false; }
+		// Measure Backup Battery voltage
+		BatVolt = adcSensor.getSingleEnded(1) * adcSensor.getMultiplier();
+		if (adcSensor.isConnected() == 1) {
+			bitWrite(SensorsOK, 4, 1);
+		}
+		else {
+			bitWrite(SensorsOK, 4, 0);
+		}
+
+
+
 		// Record if sensor reads were OK
 		SensorsOKAvg = SensorsOKAvg & SensorsOK;
-		if (debug && (!bitRead(SensorsOK, 0) || !bitRead(SensorsOK, 1) || !bitRead(SensorsOK, 2) || !bitRead(SensorsOK, 3))) {
+		if (debug && (!bitRead(SensorsOK, 0) || !bitRead(SensorsOK, 1) || !bitRead(SensorsOK, 2) || !bitRead(SensorsOK, 3) || !bitRead(SensorsOK, 4))) {
 			Serial.println(F("At least 1 sensor read failed"));
 			Serial.print(F("SensorOK byte: "));
 			Serial.println(SensorsOK, BIN);
@@ -1092,6 +1153,8 @@ void loop() {
 			Serial.println(Temp_FR);
 			Serial.print(F("FR_RH: "));
 			Serial.println(RH_FR);
+			Serial.print(F("ADC_BatVolt: "));
+			Serial.println(BatVolt);
 		}
 
 		// Add new values to sum
@@ -1361,9 +1424,8 @@ void loop() {
 		FR_Fan_ON_Sum = 0;
 
 		SumNum = 0;
-		SensorsOKAvg = B00001111;
+		SensorsOKAvg = B00011111;
 	}
-
 
 
 	////// State 8. Test if there is data available to be sent to IoT cloud
@@ -1373,7 +1435,6 @@ void loop() {
 		UTC_t - t_DataBucket > DataBucket_frq - 15) {
 		root.open("/");	// Open root directory
 		root.rewind();	// Rewind root directory
-		LogFile.openNext(&root, O_RDWR);
 		while (LogFile.openNext(&root, O_RDWR)) {
 			LogFile.rewind();
 			LogFile.fgets(line, sizeof(line));     // Get first line
@@ -1382,6 +1443,15 @@ void loop() {
 				Serial.print(F("File first line: "));
 				Serial.println(str.substring(0, str.indexOf("\r")));
 			}
+			// If first character in file is a digit, the file is a setpoint file
+			// Continue to next file
+			str = str.substring(0, str.indexOf("\r"));
+			if (str.toFloat()) {
+				if (debug) { Serial.println(F("File is a setpoints file, continuing to next file")); }
+				LogFile.close();
+				continue;
+			}
+			str = String(line);		// recover str String from read line
 			str = str.substring(str.indexOf("\t"), str.indexOf("\r"));
 			if (str == "Done") {	// Skips file if year data is all sent to IoT
 				LogFile.close();
@@ -1401,6 +1471,7 @@ void loop() {
 						Serial.println(str.substring(0, str.indexOf("\r")));
 					}
 					PayloadRdy = true;
+					LogFile.close();
 					break;
 				}
 			}
@@ -1561,7 +1632,8 @@ void loop() {
 
 	//delay(500);
 	printWifiStatus();
-
+	Serial.print(F("SRAM memory: "));
+	Serial.println(freeMemory());
 
 }
 
@@ -1586,3 +1658,20 @@ void printWifiStatus() {
 
 
 
+#ifdef __arm__
+// should use uinstd.h to define sbrk but Due causes a conflict
+extern "C" char* sbrk(int incr);
+#else  // __ARM__
+extern char* __brkval;
+#endif  // __arm__
+
+int freeMemory() {
+	char top;
+#ifdef __arm__
+	return &top - reinterpret_cast<char*>(sbrk(0));
+#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+	return &top - __brkval;
+#else  // __arm__
+	return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+#endif  // __arm__
+}
