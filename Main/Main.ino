@@ -354,7 +354,7 @@ PID FR_RH_PID(&RH_FR, &FR_Fan_ON_t, &FR_RH_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
 void setup() {
 
 	////// Start General Libraries
-	Serial.begin(9600);
+	Serial.begin(115200);
 	delay(2500);
 	if (debug = true) { Serial.print(F("\nSetup start\n")); }
 	Wire.begin();
@@ -1081,9 +1081,11 @@ void loop() {
 	}
 
 
-	////// State 4. Test if it is time to read Temp, RH and Fan values
+	////// State 4. Test if it is time to read Temp, RH values
+	// 	   ADN test if AC current is OK
 	////// AND record sensor values for 5-minute averages (each 20 seconds)
 	if ((s % 20 == 0) && (s != LastSum)) {
+		if (debug) { Serial.println(F("Time to read sensors")); }
 
 		// Read Red chamber Temp/RH sensor
 		digitalWrite(I2C_Select_0_PIN, LOW);
@@ -1323,6 +1325,7 @@ void loop() {
 
 	////// State 7. Test if it is time to compute  averages and record in SD card (each 5 minutes)
 	if (((m % 5) == 0) && (m != LastLog) && (SumNum > 0)) {
+		if (debug) { Serial.println(F("Time to calculate averages and log to SD card")); }
 		// Calculate averages
 		TempAvg_R = TempSum_R / SumNum;
 		RHAvg_R = RHSum_R / SumNum;
@@ -1428,56 +1431,99 @@ void loop() {
 	}
 
 
+
+	/*
+	Serial.print(F("Payload ready: "));
+	Serial.println(PayloadRdy);
+
+	Serial.print(F("UTC: "));
+	Serial.println((int)UTC_t);
+
+	Serial.print(F("t_DataBucket: "));
+	Serial.println((int)t_DataBucket);
+
+	Serial.print(F("DataBucket_frq: "));
+	Serial.println(DataBucket_frq);
+
+	Serial.print(F("Logic test: "));
+	Serial.println(!PayloadRdy &&
+		UTC_t - t_DataBucket > DataBucket_frq - 15);
+
+	Serial.print(F("Root open: "));
+	Serial.println(root.open("/"));
+
+	root.rewind();
+
+	Serial.print(F("Open file, try 1: "));
+	Serial.println(LogFile.openNext(&root, O_RDWR));
+	LogFile.printName(&Serial);
+	Serial.print(F("Open file, try 2: "));
+	Serial.println(LogFile.openNext(&root, O_RDWR));
+	LogFile.printName(&Serial);
+	Serial.println();
+
+	root.close();
+	LogFile.close();
+	*/
+
 	////// State 8. Test if there is data available to be sent to IoT cloud
 	// Only test if Payload is not ready AND
 	// the next DataBucket upload oportunity is in 15 sec 
 	if (!PayloadRdy &&
 		UTC_t - t_DataBucket > DataBucket_frq - 15) {
-		root.open("/");	// Open root directory
-		root.rewind();	// Rewind root directory
-		while (LogFile.openNext(&root, O_RDWR)) {
-			LogFile.rewind();
-			LogFile.fgets(line, sizeof(line));     // Get first line
-			str = String(line);
+		if (debug) { Serial.println(F("Time to look in LogFiles for a Payload")); }
+		for (int i = yr - 1; i <= yr; i++) {
 			if (debug) {
-				Serial.print(F("File first line: "));
-				Serial.println(str.substring(0, str.indexOf("\r")));
+				Serial.println(F("For loop start"));
+				Serial.print(F("Looking for year LogFile: "));
+				Serial.println(i);
+				Serial.print(F("SRAM memory: "));
+				Serial.println(freeMemory());
 			}
-			// If first character in file is a digit, the file is a setpoint file
-			// Continue to next file
-			str = str.substring(0, str.indexOf("\r"));
-			if (str.toFloat()) {
-				if (debug) { Serial.println(F("File is a setpoints file, continuing to next file")); }
-				LogFile.close();
-				continue;
-			}
-			str = String(line);		// recover str String from read line
-			str = str.substring(str.indexOf("\t"), str.indexOf("\r"));
-			if (str == "Done") {	// Skips file if year data is all sent to IoT
-				LogFile.close();
-				continue;
-			}
-			position = str.toInt();	// Sets file position to start of last line sent to IoT
-			LogFile.seekSet(position);	// Set position to last line sent to LoRa
-			// Read each line until a line not sent to IoT is found
-			while (LogFile.available()) {
-				position = LogFile.curPosition();  // START position of current line
-				int len = LogFile.fgets(line, sizeof(line));
-				if (line[len - 2] == '0') {
-					str = String(line); // str is the payload, next state test if there is internet connection to send payload to IoT
-					if (debug) {
-						Serial.println("Loteria, data to send to IoT found!");
-						Serial.print(F("Data: "));
-						Serial.println(str.substring(0, str.indexOf("\r")));
-					}
-					PayloadRdy = true;
+			if (PayloadRdy) { break; }
+			if (LogFile.open(FileName[i - 2020])) {
+				if(debug) {
+					Serial.print(F("Opened file: "));
+					LogFile.printName(&Serial);
+					Serial.println();
+				}
+				LogFile.rewind();
+				LogFile.fgets(line, sizeof(line));     // Get first line
+				str = String(line);
+				if (debug) {
+					LogFile.printName(&Serial);
+					Serial.println();
+					Serial.print(F("File first line: "));
+					Serial.println(str.substring(0, str.indexOf("\r")));
+				}
+				str = str.substring(str.indexOf("\t"), str.indexOf("\r"));
+				if (str == "Done") {	// Skips file if year data is all sent to IoT
 					LogFile.close();
-					break;
+				}
+				else {
+					position = str.toInt();	// Sets file position to start of last line sent to IoT
+					LogFile.seekSet(position);	// Set position to last line sent to LoRa
+					// Read each line until a line not sent to IoT is found
+					while (LogFile.available()) {
+						position = LogFile.curPosition();  // START position of current line
+						int len = LogFile.fgets(line, sizeof(line));
+						if (line[len - 2] == '0') {
+							str = String(line); // str is the payload, next state test if there is internet connection to send payload to IoT
+							if (debug) {
+								Serial.println("Loteria, data to send to IoT found!");
+								Serial.print(F("Data: "));
+								Serial.println(str.substring(0, str.indexOf("\r")));
+							}
+							PayloadRdy = true;
+							LogFile.close();
+							break;
+						}
+					}
+					LogFile.close();
 				}
 			}
+			LogFile.close();	// 
 		}
-		root.close();
-		LogFile.close();
 	}
 
 

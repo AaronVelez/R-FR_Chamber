@@ -1,5 +1,6 @@
 ﻿// Function to get setpoints from txt files form SD card
 float Get_Setpoint(const char* Setpoint_File) {
+	
 	ExFile SetpointsFile;
 	char read[25];
 	String read_str;
@@ -23,11 +24,13 @@ float Get_Setpoint(const char* Setpoint_File) {
 		Serial.println(setpoint);
 	}
 	return setpoint;
+	
 }
 
 
 // Function to set setpoints from txt files form SD card
 void Set_Setpoint(const char* Setpoint_File, float setpoint) {
+	
 	ExFile SetpointsFile;
 
 	SetpointsFile.remove(Setpoint_File);
@@ -35,4 +38,5 @@ void Set_Setpoint(const char* Setpoint_File, float setpoint) {
 
 	SetpointsFile.println(setpoint);
 	SetpointsFile.close();
+	
 }
