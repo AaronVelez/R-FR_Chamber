@@ -370,17 +370,6 @@ void setup() {
 	SPI.begin();
 
 
-
-
-
-	Serial.print(F("SRAM memory: "));
-	Serial.println(freeMemory());
-
-
-
-
-
-
 	////// Start WiFi
 	if (debug = true) { Serial.print(F("Conecting to WiFi")); }
 	WiFi.setPins(SPIWIFI_SS, SPIWIFI_ACK, ESP32_RESETN, ESP32_GPIO0, &SPIWIFI);
@@ -520,21 +509,6 @@ void setup() {
 		FR_2_LEDs_Period_3_OFF = (int)Get_Setpoint("FR_2_LEDs_Period_3_OFF.txt");
 	}
 	
-
-
-
-
-
-
-
-	Serial.print(F("SRAM memory: "));
-	Serial.println(freeMemory());
-
-
-
-
-
-
 
 	////// Configure IoT
 	if (debug) { Serial.println(F("Configuring IoT...")); }
@@ -1366,7 +1340,7 @@ void loop() {
 			LogFile.println((String)"Station Name\t" + StaName + "\t\t\t");
 			LogFile.println((String)"Station Type\t" + StaType + "\t\t\t");
 			LogFile.println((String)"Firmware\t" + Firmware + "\t\t\t");
-			LogFile.println((String)"Log file creation local UNIX time:\t" + local_t + "\t\t\t");
+			LogFile.println((String)"Log file creation local UNIX time:\t" + (unsigned long)local_t + "\t\t\t");
 			LogFile.println(F("\t\t\t"));
 			LogFile.println(F("\t\t\t"));
 			LogFile.println(F("\t\t\t"));
@@ -1480,8 +1454,6 @@ void loop() {
 				Serial.println(F("For loop start"));
 				Serial.print(F("Looking for year LogFile: "));
 				Serial.println(i);
-				Serial.print(F("SRAM memory: "));
-				Serial.println(freeMemory());
 			}
 			if (PayloadRdy) { break; }
 			if (LogFile.open(FileName[i - 2020])) {
@@ -1677,12 +1649,8 @@ void loop() {
 	}
 
 
-
-
 	//delay(500);
-	printWifiStatus();
-	Serial.print(F("SRAM memory: "));
-	Serial.println(freeMemory());
+	if (debug) { printWifiStatus(); }
 
 }
 
@@ -1720,24 +1688,3 @@ void printWifiStatus() {
 	Serial.println(" dBm");
 }
 
-
-
-
-
-#ifdef __arm__
-// should use uinstd.h to define sbrk but Due causes a conflict
-extern "C" char* sbrk(int incr);
-#else  // __ARM__
-extern char* __brkval;
-#endif  // __arm__
-
-int freeMemory() {
-	char top;
-#ifdef __arm__
-	return &top - reinterpret_cast<char*>(sbrk(0));
-#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
-	return &top - __brkval;
-#else  // __arm__
-	return __brkval ? &top - __brkval : &top - __malloc_heap_start;
-#endif  // __arm__
-}
