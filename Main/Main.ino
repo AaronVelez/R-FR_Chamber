@@ -13,15 +13,16 @@
 //////////
 // Pins 11, 12 and 13 are used for WiFi feather wing
 const int SD_CS_PIN = 10;				// SD on Addlogger M0 Feather 
-const int R_Chamber_Actinic_PIN = 14;		// Power Actinic Lamp in Red chamber
-const int FR_Chamber_Actinic_PIN = 15;		// Power Actinic Lamp in Farred chamber
+const int R_Chamber_Actinic_PIN = 14;		// Power Actinic Lamp in Red chamber. Level shifter channel 1.
+const int FR_Chamber_Actinic_PIN = 15;		// Power Actinic Lamp in Farred chamber.  Level shifter channel 2.
 const int I2C_Select_0_PIN = 9;		// I2C multiplexer digital select line
-const int FR_1_LEDs_PIN = 16;			// Power Farred LEDs, circuit 1
-const int FR_2_LEDs_PIN = 17;			// Power Farred LEDs, circuit 2
-const int FR_1_LEDs_PWM_PIN = 18;		// PWM  line to dim FarRed LEDs, circuit 1
-const int FR_2_LEDs_PWM_PIN = 19;		// PWM  line to dim FarRed LEDs, circuit 2
-const int R_Chamber_Fan_PIN = 5;		// Power Fan in Red Chamber
-const int FR_Chamber_Fan_PIN = 6;		// Power Fan in Farred Chamber
+const int FR_1_LEDs_PIN = 16;			// Power Farred LEDs, circuit 1.  Level shifter channel 3.
+const int FR_2_LEDs_PIN = 17;			// Power Farred LEDs, circuit 2.  Level shifter channel 4.
+const int R_Chamber_Fan_PIN = 18;		// Power Fan in Red Chamber.  Level shifter channel 5.
+const int FR_Chamber_Fan_PIN = 19;		// Power Fan in Farred Chamber.  Level shifter channel 6.
+const int FR_1_LEDs_PWM_PIN = 5;		// PWM  line to dim FarRed LEDs, circuit 1.  Level shifter channel 7.
+const int FR_2_LEDs_PWM_PIN = 6;		// PWM  line to dim FarRed LEDs, circuit 2.  Level shifter channel 8.
+
 
 
 
@@ -34,7 +35,15 @@ const int FR_Chamber_Fan_PIN = 6;		// Power Fan in Farred Chamber
 
 ////// Credentials_R-FR_Chamber.h is a user-created library containing paswords, IDs and credentials
 #include "Credentials_R-FR_Chamber.h"
+#ifdef WiFi_SSID_is_HEX
+const bool ssidIsHex = true;
+const char ssidHEX[] = WIFI_SSID_HEX;
+char ssid[64];
+#else
+const bool ssidIsHex = false;
+const char ssidHEX[] = "";
 const char ssid[] = WIFI_SSID;
+#endif
 const char password[] = WIFI_PASSWD;
 const char iot_server[] = IoT_SERVER;
 const char iot_user[] = IoT_USER;
@@ -364,30 +373,8 @@ void setup() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 	Serial.print(F("SRAM memory: "));
 	Serial.println(freeMemory());
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -397,10 +384,24 @@ void setup() {
 	////// Start WiFi
 	if (debug = true) { Serial.print(F("Conecting to WiFi")); }
 	WiFi.setPins(SPIWIFI_SS, SPIWIFI_ACK, ESP32_RESETN, ESP32_GPIO0, &SPIWIFI);
+	
+#ifdef WiFi_SSID_is_HEX
+	String ssidStr = HexString2ASCIIString(ssidHEX);
+	ssidStr.toCharArray(ssid, sizeof(ssid) + 1);
+#endif
+	
+	if (debug) {
+		Serial.print(F("SSID name: "));
+		Serial.println(ssid);
+	}
+	
 	// Test for 10 seconds if there is WiFi connection; if not, continue to loop
 	for (int i = 0; i <= 10; i++) {
 		if (WiFi.status() != WL_CONNECTED) {
-			WiFi.begin(WIFI_SSID, WIFI_PASSWD);
+
+			if (password == "") { WiFi.begin(ssid); }
+			else { WiFi.begin(ssid, password); }
+
 			Serial.print(".");
 			delay(1000);
 		}
@@ -1353,7 +1354,7 @@ void loop() {
 
 
 		// Open Year LogFile (create if not available)
-		if (!LogFile.exists(FileName[yr - 2020])) {
+		if (!sd.exists(FileName[yr - 2020])) {
 			LogFile.open((FileName[yr - 2020]), O_RDWR | O_CREAT); // Create file
 
 			// Add Metadata
@@ -1365,6 +1366,7 @@ void loop() {
 			LogFile.println((String)"Station Name\t" + StaName + "\t\t\t");
 			LogFile.println((String)"Station Type\t" + StaType + "\t\t\t");
 			LogFile.println((String)"Firmware\t" + Firmware + "\t\t\t");
+			LogFile.println((String)"Log file creation local UNIX time:\t" + local_t + "\t\t\t");
 			LogFile.println(F("\t\t\t"));
 			LogFile.println(F("\t\t\t"));
 			LogFile.println(F("\t\t\t"));
@@ -1376,6 +1378,7 @@ void loop() {
 			LogFile.println(Headers); // Add Headers
 		}
 		else {
+			LogFile.close();
 			LogFile.open(FileName[yr - 2020], O_RDWR); // Open file
 			LogFile.seekEnd(); // Set position to end of file
 		}
@@ -1682,6 +1685,23 @@ void loop() {
 	Serial.println(freeMemory());
 
 }
+
+
+// Function for WiFi SSID with non-ASCII characters
+String HexString2ASCIIString(String hexstring) {
+	String temp = "", sub = "", result;
+	char buf[3];
+	for (int i = 0; i < hexstring.length(); i += 2) {
+		sub = hexstring.substring(i, i + 2);
+		sub.toCharArray(buf, 3);
+		char b = (char)strtol(buf, 0, 16);
+		if (b == '\0')
+			break;
+		temp += b;
+	}
+	return temp;
+}
+
 
 void printWifiStatus() {
 	// print the SSID of the network you're attached to:
