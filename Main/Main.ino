@@ -198,7 +198,7 @@ int LastLog = -1;			// Last minute that variables were loged to the SD card
 bool PayloadRdy = false;	// Payload ready to send to IoT
 
 time_t t_WiFiCnxTry = 0;      // Last time a (re)connection to internet happened
-const int WiFiCnx_frq = 30;  // (re)connection to internet frequency in seconds
+const int WiFiCnx_frq = 150;  // (re)connection to internet frequency in seconds
 
 byte SensorsOK = B00000000;     // Byte variable to store real time sensor status
 byte SensorsOKAvg = B00011111;  // Byte variable to store SD card average sensor status
@@ -384,27 +384,8 @@ void setup() {
 		Serial.println(ssid);
 	}
 	
-	// Test for 10 seconds if there is WiFi connection; if not, continue to loop
-	for (int i = 0; i <= 10; i++) {
-		if (WiFi.status() != WL_CONNECTED) {
-
-			if (password == "") { WiFi.begin(ssid); }
-			else { WiFi.begin(ssid, password); }
-
-			Serial.print(".");
-			delay(1000);
-		}
-		else {
-			Serial.println(F("\nConnected to internet!"));
-			Serial.print(F("IP address: "));
-			Serial.println(WiFi.localIP());
-			break;
-		}
-		if (i == 10) {
-			Serial.println(F("\nNo internet connection"));
-			WiFi.disconnect();  // if no internet, disconnect. This prevents the board to be busy only trying to connect.
-		}
-	}
+	// Reset WiFi board and try to connect 5 times to WiFi; if not successful, continue to loop
+	WiFiConnectTry();
 
 
 	////// Set pin modes of pins not associated with libraries
@@ -972,6 +953,7 @@ void setup() {
 	// Red Chamber sensor
 	if (debug) { Serial.println(F("Starting Temp/RH sensor Red...")); }
 	digitalWrite(I2C_Select_0_PIN, LOW);
+	delay(500);
 	if (sht3x.begin() != 0) {
 		if (debug) { Serial.println(F("Failed to initialize Red sensor, please confirm wire connection")); }
 	}
@@ -986,6 +968,7 @@ void setup() {
 	// Far red Chamber sensor
 	if (debug) { Serial.println(F("Starting Temp/RH sensor Far red...")); }
 	digitalWrite(I2C_Select_0_PIN, HIGH);
+	delay(500);
 	if (sht3x.begin() != 0) {
 		if (debug) { Serial.println(F("Failed to initialize Far red sensor, please confirm wire connection")); }
 	}
@@ -1028,11 +1011,14 @@ void loop() {
 
 
 	////// State 0. Test internet connection; if not, try to connect.
-	if (WiFi.status() != WL_CONNECTED) { WiFi.disconnect(); }
+	//if (WiFi.status() != WL_CONNECTED) { WiFi.disconnect(); }
 	if (WiFi.status() != WL_CONNECTED &&
 		UTC_t - t_WiFiCnxTry > WiFiCnx_frq) {
-		Serial.println(F("Loop reconect try"));
-		WiFi.begin(ssid, password);
+		Serial.println(F("Disconnecting Wifi"));
+		Serial.print(F("WiFi Status at disconnect: "));
+		Serial.println( WiFi.disconnect() );
+		Serial.println(F("Loop reconect try:"));
+		WiFiConnectTry();
 
 		t_WiFiCnxTry = UTC_t;
 	}
@@ -1064,6 +1050,7 @@ void loop() {
 
 		// Read Red chamber Temp/RH sensor
 		digitalWrite(I2C_Select_0_PIN, LOW);
+		delay(500);
 		sht3x_data = sht3x.readTemperatureAndHumidity(sht3x.eRepeatability_High);
 		if (sht3x_data.ERR == 0) {
 			Temp_R = sht3x_data.TemperatureC;
@@ -1080,6 +1067,7 @@ void loop() {
 
 		// Read Farred chamber Temp/RH sensor
 		digitalWrite(I2C_Select_0_PIN, HIGH);
+		delay(500);
 		sht3x_data = sht3x.readTemperatureAndHumidity(sht3x.eRepeatability_High);
 		if (sht3x_data.ERR == 0) {
 			Temp_FR = sht3x_data.TemperatureC;
@@ -1649,8 +1637,10 @@ void loop() {
 	}
 
 
-	//delay(500);
-	if (debug) { printWifiStatus(); }
+
+	if (debug) {
+		printWifiStatus();
+	}
 
 }
 
@@ -1671,10 +1661,54 @@ String HexString2ASCIIString(String hexstring) {
 }
 
 
+// Function to connect to WiFi
+void WiFiConnectTry() {
+	
+	// Reset WiFi board
+	Serial.println(F("Resseting WiFi board"));
+	digitalWrite(ESP32_RESETN, LOW);
+	delay(500);
+	digitalWrite(ESP32_RESETN, HIGH);
+	delay(500);
+
+	for (int i = 0; i <= 5; i++) {
+		if (WiFi.status() != WL_CONNECTED) {
+
+			if (password == "") { WiFi.begin(ssid); }
+			else { WiFi.begin(ssid, password); }
+			
+			delay(1000);
+			
+			Serial.print(F("WiFi status: "));
+			Serial.println(WiFi.status());			
+		}
+		else {
+			Serial.println(F("\nConnected to internet!"));
+			Serial.print(F("IP address: "));
+			Serial.println(WiFi.localIP());
+			break;
+		}
+		if (i == 5) {
+			Serial.println(F("\nNo internet connection"));
+			WiFi.disconnect();  // if no internet, disconnect. This prevents some boards to be busy only trying to connect.
+		}
+	}
+}
+
+
+// Function to monitor WiFi status
 void printWifiStatus() {
 	// print the SSID of the network you're attached to:
 	Serial.print("SSID: ");
 	Serial.println(WiFi.SSID());
+
+	// print WiFi status
+	Serial.print(F("WiFi status: "));
+	Serial.println(WiFi.status());
+
+	// Test 
+	Serial.print(F("Test WiFi status results: "));
+	Serial.println(WiFi.status() == WL_CONNECTED);
 
 	// print your board's IP address:
 	IPAddress ip = WiFi.localIP();
@@ -1686,5 +1720,10 @@ void printWifiStatus() {
 	Serial.print("signal strength (RSSI):");
 	Serial.print(rssi);
 	Serial.println(" dBm");
+
+	// print Thing IoT connect status
+	Serial.print(F("Thing IoT connect status: "));
+	Serial.println(thing.is_connected());
+
 }
 

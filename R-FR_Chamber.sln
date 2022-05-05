@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_SD", "Test_SD\Test_SD.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Monitor RAM memory", "Monitor RAM memory\Monitor RAM memory.vcxproj", "{04083D35-58A9-4C38-A03F-F592E216FBAC}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_SHT31", "Test_SHT31\Test_SHT31.vcxproj", "{DABC48B6-049A-4BA7-B5C5-5002CC4FE859}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -27,6 +29,10 @@ Global
 		{04083D35-58A9-4C38-A03F-F592E216FBAC}.Debug|x86.Build.0 = Debug|Win32
 		{04083D35-58A9-4C38-A03F-F592E216FBAC}.Release|x86.ActiveCfg = Release|Win32
 		{04083D35-58A9-4C38-A03F-F592E216FBAC}.Release|x86.Build.0 = Release|Win32
+		{DABC48B6-049A-4BA7-B5C5-5002CC4FE859}.Debug|x86.ActiveCfg = Debug|Win32
+		{DABC48B6-049A-4BA7-B5C5-5002CC4FE859}.Debug|x86.Build.0 = Debug|Win32
+		{DABC48B6-049A-4BA7-B5C5-5002CC4FE859}.Release|x86.ActiveCfg = Release|Win32
+		{DABC48B6-049A-4BA7-B5C5-5002CC4FE859}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
