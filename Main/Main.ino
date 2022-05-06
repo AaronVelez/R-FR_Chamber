@@ -287,7 +287,7 @@ double RH_R = -1;          // Air RH value RED chamber
 double Temp_FR = -1;        // Air temperature FARRED chamber 
 double RH_FR = -1;          // Air RH value FARRED chamber
 bool AC_OK = true;			// Monitor AC power supply OK
-double BatVolt = 0;			// Batery voltage
+double USBVolt = 0;			// USB voltage
 
 
 ////// Variables to store sum for eventual averaging
@@ -297,7 +297,7 @@ double RHSum_R = 0;
 double TempSum_FR = 0;
 double RHSum_FR = 0;
 int AC_OK_Sum = 0;
-double BatVolt_Sum = 0;
+double USBVolt_Sum = 0;
 // Actinic lamps
 int R_Actinic_Manual_Ctrl_Sum = 0;
 int R_Actinic_ON_Sum = 0;
@@ -324,7 +324,7 @@ double RHAvg_R = 0;
 double TempAvg_FR = 0;
 double RHAvg_FR = 0;
 double AC_OK_Avg = 0;
-double BatVolt_Avg = 0;
+double USBVolt_Avg = 0;
 // Actinic lamps
 double R_Actinic_Manual_Ctrl_Avg = 0;
 double R_Actinic_ON_Avg = 0;
@@ -364,7 +364,7 @@ void setup() {
 
 	////// Start General Libraries
 	Serial.begin(115200);
-	delay(2500);
+	delay(6000);
 	if (debug = true) { Serial.print(F("\nSetup start\n")); }
 	Wire.begin();
 	SPI.begin();
@@ -883,7 +883,7 @@ void setup() {
 	thing["RT_Temp_FarRed"] >> [](pson& out) { out = Temp_FR; };
 	thing["RT_RH_FarRed"] >> [](pson& out) { out = RH_FR; };
 	thing["RT_AC_OK"] >> [](pson& out) { out = AC_OK; };
-	thing["RT_Battery_Voltage"] >> [](pson& out) { out = BatVolt; };
+	thing["RT_USB_Voltage"] >> [](pson& out) { out = USBVolt; };
 	
 	thing["Avg_Data"] >> [](pson& out) {
 		out["Time_Stamp"] = SD_local_t;
@@ -907,7 +907,7 @@ void setup() {
 		out["FarRed_Chamber_Fan_ON"] = FR_Fan_ON_Avg;
 		out["Sensors_OK"] = SensorsOKIoT;
 		out["AC_OK"] = AC_OK_Avg;
-		out["Battery_Voltage"] = BatVolt_Avg;
+		out["USB_Voltage"] = USBVolt_Avg;
 
 	};
 
@@ -915,9 +915,13 @@ void setup() {
 
 	////// Start RTC
 	if (debug) { Serial.println(F("Starting RTC...")); }
-	if (!rtc.begin()) {
-		if (debug) { Serial.println(F("RTC start fail")); }
+	if (rtc.begin()) {
+		if (debug) { Serial.println(F("RTC start OK")); }
 	}
+	else {
+		Serial.println(F("RTC start fail"));
+	}
+	delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 
 
 	////// Update time from NTP or RTC if WiFi not available
@@ -947,13 +951,13 @@ void setup() {
 		Serial.print(F("ADC conected: "));
 		Serial.println(adcSensor.isConnected());
 	}
-	
+	delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
+
 
 	////// Start SHT31 Temp and RH sensor
 	// Red Chamber sensor
 	if (debug) { Serial.println(F("Starting Temp/RH sensor Red...")); }
 	digitalWrite(I2C_Select_0_PIN, LOW);
-	delay(500);
 	if (sht3x.begin() != 0) {
 		if (debug) { Serial.println(F("Failed to initialize Red sensor, please confirm wire connection")); }
 	}
@@ -964,11 +968,12 @@ void setup() {
 	if (!sht3x.softReset()) {
 		if (debug) { Serial.println(F("Failed to initialize Red sensor....")); }
 	}
+	delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 
 	// Far red Chamber sensor
 	if (debug) { Serial.println(F("Starting Temp/RH sensor Far red...")); }
 	digitalWrite(I2C_Select_0_PIN, HIGH);
-	delay(500);
+	delay(1000);
 	if (sht3x.begin() != 0) {
 		if (debug) { Serial.println(F("Failed to initialize Far red sensor, please confirm wire connection")); }
 	}
@@ -979,6 +984,7 @@ void setup() {
 	if (!sht3x.softReset()) {
 		if (debug) { Serial.println(F("Failed to initialize Far red sensor....")); }
 	}
+	delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 	digitalWrite(I2C_Select_0_PIN, LOW);
 
 
@@ -1049,8 +1055,8 @@ void loop() {
 		if (debug) { Serial.println(F("Time to read sensors")); }
 
 		// Read Red chamber Temp/RH sensor
+		if (debug) { Serial.println(F("Reading Red sensor")); }
 		digitalWrite(I2C_Select_0_PIN, LOW);
-		delay(500);
 		sht3x_data = sht3x.readTemperatureAndHumidity(sht3x.eRepeatability_High);
 		if (sht3x_data.ERR == 0) {
 			Temp_R = sht3x_data.TemperatureC;
@@ -1064,10 +1070,12 @@ void loop() {
 			bitWrite(SensorsOK, 0, 0);
 			bitWrite(SensorsOK, 1, 0);
 		}
+		delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 
 		// Read Farred chamber Temp/RH sensor
+		if (debug) { Serial.println(F("Reading Far red sensor")); }
 		digitalWrite(I2C_Select_0_PIN, HIGH);
-		delay(500);
+		delay(1000);
 		sht3x_data = sht3x.readTemperatureAndHumidity(sht3x.eRepeatability_High);
 		if (sht3x_data.ERR == 0) {
 			Temp_FR = sht3x_data.TemperatureC;
@@ -1081,27 +1089,29 @@ void loop() {
 			bitWrite(SensorsOK, 2, 0);
 			bitWrite(SensorsOK, 3, 0);
 		}
+		delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 		digitalWrite(I2C_Select_0_PIN, LOW);
 
 		// Read I2C ADC
+		if (debug) { Serial.println(F("Reading I2C ADC")); }
 		// With gain 1x, 1 bit  = 2mV
 		// IF AC is OK, supplu voltage is 5V, and after voltage divider is 2.5V.
 		// Threshold to consider AC OK is 4.75V
-		if ((adcSensor.getSingleEnded(0) * adcSensor.getMultiplier()) > 2375) {
+		USBVolt = adcSensor.getSingleEnded(0) * adcSensor.getMultiplier();
+		if (USBVolt > 2375) {
 			// M0 supply voltage is higher than 4.75V (2375 mV x 2)
 			// Mark AC supply OK
 			AC_OK = true;
 		}
 		else { AC_OK = false; }
-		// Measure Backup Battery voltage
-		BatVolt = adcSensor.getSingleEnded(1) * adcSensor.getMultiplier();
+		// Record if ADC sensor is OK
 		if (adcSensor.isConnected() == 1) {
 			bitWrite(SensorsOK, 4, 1);
 		}
 		else {
 			bitWrite(SensorsOK, 4, 0);
 		}
-
+		delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 
 
 		// Record if sensor reads were OK
@@ -1119,7 +1129,7 @@ void loop() {
 			Serial.print(F("FR_RH: "));
 			Serial.println(RH_FR);
 			Serial.print(F("ADC_BatVolt: "));
-			Serial.println(BatVolt);
+			Serial.println(USBVolt);
 		}
 
 		// Add new values to sum
@@ -1129,7 +1139,7 @@ void loop() {
 		TempSum_FR += Temp_FR;
 		RHSum_FR += RH_FR;
 		AC_OK_Sum += AC_OK;
-		BatVolt_Sum += BatVolt;
+		USBVolt_Sum += USBVolt;
 		// Actinic
 		R_Actinic_Manual_Ctrl_Sum += (int)R_Actinic_Manual_Ctrl;
 		R_Actinic_ON_Sum += (int)R_Actinic_ON;
@@ -1295,7 +1305,7 @@ void loop() {
 		TempAvg_FR = TempSum_FR / SumNum;
 		RHAvg_FR = RHSum_FR / SumNum;
 		AC_OK_Avg = AC_OK_Sum / SumNum;
-		BatVolt_Avg = BatVolt_Sum / SumNum;
+		USBVolt_Avg = USBVolt_Sum / SumNum;
 		// Actinic
 		R_Actinic_Manual_Ctrl_Avg = R_Actinic_Manual_Ctrl_Sum / SumNum;
 		R_Actinic_ON_Avg = R_Actinic_ON_Sum / SumNum;
@@ -1348,7 +1358,7 @@ void loop() {
 
 		// Log to SD card
 		LogString = (String)(unsigned long)UTC_t + "\t" + (unsigned long)local_t + "\t" + yr + "\t" + mo + "\t" + dy + "\t" + h + "\t" + m + "\t" + s + "\t" +
-			String(AC_OK_Avg, 2) + "\t" + String(BatVolt_Avg, 4) + "\t" +
+			String(AC_OK_Avg, 2) + "\t" + String(USBVolt_Avg, 4) + "\t" +
 			String(TempAvg_R, 4) + "\t" + String(RHAvg_R, 4) + "\t" +
 			String(TempAvg_FR, 4) + "\t" + String(RHAvg_FR, 4) + "\t" +
 			String(R_Actinic_ON_Avg, 2) + "\t" + String(FR_Actinic_ON_Avg, 2) + "\t" +
@@ -1372,7 +1382,7 @@ void loop() {
 		TempSum_FR = 0;
 		RHSum_FR = 0;
 		AC_OK_Sum = 0;
-		BatVolt_Sum = 0;
+		USBVolt_Sum = 0;
 		
 		R_Actinic_Manual_Ctrl_Sum = 0;
 		R_Actinic_ON_Sum = 0;
@@ -1532,7 +1542,7 @@ void loop() {
 						AC_OK_Avg = buffer.toFloat();
 					}
 					else if (i == 9) {	// Battery voltage
-						BatVolt_Avg = buffer.toFloat();
+						USBVolt_Avg = buffer.toFloat();
 					}
 					else if (i == 10) {  // Red chamber Temp
 						TempAvg_R = buffer.toFloat();

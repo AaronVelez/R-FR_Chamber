@@ -37,4 +37,5 @@ void GetRTCTime() {
     dy = day();
     mo = month();
     yr = year();
+    delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 }
