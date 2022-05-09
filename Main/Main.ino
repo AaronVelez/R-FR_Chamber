@@ -106,9 +106,10 @@ Timezone mxCT(mxCDT, mxCST);
 
 
 ////// Library for SHT31 Temperature and Humidity Sensor
-#include <DFRobot_SHT3x.h>
-DFRobot_SHT3x sht3x(&Wire,/*address=*/0x44,/*RST=*/4); // secondary I2C address 0x44
-DFRobot_SHT3x::sRHAndTemp_t sht3x_data;
+//#include <DFRobot_SHT3x.h>
+//DFRobot_SHT3x sht3x(&Wire,/*address=*/0x44,/*RST=*/4); // secondary I2C address 0x44
+//DFRobot_SHT3x::sRHAndTemp_t sht3x_data;
+
 
 
 ////// Library for I2C ADC
@@ -505,6 +506,15 @@ void setup() {
 				Set_Setpoint("Debug.txt", (float)in);
 				debug = in;
 			}
+		};
+		// Environmental IoT Data
+		thing[“R_Env_Data”] << [](pson& in) {
+			Temp_R = in["IoT_Temp_R"];
+			RH_R = in["IoT_RH_R"];
+		};
+		thing[“FR_Env_Data”] << [](pson& in) {
+			Temp_FR = in["IoT_Temp_FR"];
+			RH_FR = in["IoT_RH_FR"];
 		};
 		// Red Actinic Light
 		thing["R_Actinic_Manual_Ctrl"] << [](pson& in) {
@@ -953,7 +963,7 @@ void setup() {
 	}
 	delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 
-
+	/*
 	////// Start SHT31 Temp and RH sensor
 	// Red Chamber sensor
 	if (debug) { Serial.println(F("Starting Temp/RH sensor Red...")); }
@@ -986,7 +996,7 @@ void setup() {
 	}
 	delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 	digitalWrite(I2C_Select_0_PIN, LOW);
-
+	*/
 
 	////// Start PIDs
 	windowStartTime = local_t;
@@ -1054,6 +1064,7 @@ void loop() {
 	if ((s % 20 == 0) && (s != LastSum)) {
 		if (debug) { Serial.println(F("Time to read sensors")); }
 
+		/*
 		// Read Red chamber Temp/RH sensor
 		if (debug) { Serial.println(F("Reading Red sensor")); }
 		digitalWrite(I2C_Select_0_PIN, LOW);
@@ -1091,7 +1102,7 @@ void loop() {
 		}
 		delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 		digitalWrite(I2C_Select_0_PIN, LOW);
-
+		*/
 		// Read I2C ADC
 		if (debug) { Serial.println(F("Reading I2C ADC")); }
 		// With gain 1x, 1 bit  = 2mV

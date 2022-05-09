@@ -102,7 +102,7 @@ void setup() {
 		if (debug) { Serial.println(F("Failed to initialize Red sensor....")); }
 	}
 	delay(500); // TEST
-
+	/*
 	// Far red Chamber sensor
 	if (debug) { Serial.println(F("Starting Temp/RH sensor Far red...")); }
 	digitalWrite(I2C_Select_0_PIN, HIGH);
@@ -119,7 +119,7 @@ void setup() {
 	}
 	delay(500); // TEST
 	digitalWrite(I2C_Select_0_PIN, LOW);
-
+	*/
 
 
 }
@@ -157,7 +157,7 @@ void loop() {
 	delay(500); // TEST
 
 
-
+	/*
 	Serial.println();
 	Serial.println(F("Reading Far red sensor"));
 	// Read Farred chamber Temp/RH sensor
@@ -186,7 +186,7 @@ void loop() {
 	}
 	delay(500); // TEST
 	digitalWrite(I2C_Select_0_PIN, LOW);
-
+	*/
 
 
 

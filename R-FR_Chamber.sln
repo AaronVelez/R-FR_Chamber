@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Monitor RAM memory", "Monit
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_SHT31", "Test_SHT31\Test_SHT31.vcxproj", "{DABC48B6-049A-4BA7-B5C5-5002CC4FE859}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_PWM_Level-shift", "Test_PWM_Level-shift\Test_PWM_Level-shift.vcxproj", "{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -33,6 +35,10 @@ Global
 		{DABC48B6-049A-4BA7-B5C5-5002CC4FE859}.Debug|x86.Build.0 = Debug|Win32
 		{DABC48B6-049A-4BA7-B5C5-5002CC4FE859}.Release|x86.ActiveCfg = Release|Win32
 		{DABC48B6-049A-4BA7-B5C5-5002CC4FE859}.Release|x86.Build.0 = Release|Win32
+		{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}.Debug|x86.ActiveCfg = Debug|Win32
+		{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}.Debug|x86.Build.0 = Debug|Win32
+		{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}.Release|x86.ActiveCfg = Release|Win32
+		{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}</ProjectGuid>
+    <RootNamespace>Test_PWM_Level_shift</RootNamespace>
+    <ProjectName>Test_PWM_Level-shift</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>
+    </PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>
+    </PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>
+    </PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>
+    </PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Test_PWM_Level-shift;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\1.6.5\cores\arduino;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\1.6.5\cores\arduino\avr;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\1.6.5\cores\arduino\TinyUSB;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\1.6.5\cores\arduino\USB;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\1.6.5\variants\feather_m0;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\1.6.5\cores\arduino\TinyUSB\Adafruit_TinyUSB_ArduinoCore;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\1.6.5\cores\arduino\TinyUSB\Adafruit_TinyUSB_ArduinoCore\tinyusb\src;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0\CMSIS\Core\Include\;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0\CMSIS\DSP\Include\;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\arduino\tools\CMSIS-~1\125586~1.0\CMSIS\Device\ATMEL\;$(ProjectDir)..\..\..\..\..\..\DOCUME~1\PROYEC~1\IoT\SOFTWA~1\R-FR_C~1\TEST_P~1;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\hardware\samd\168AB6~1.5\cores\arduino;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\hardware\samd\168AB6~1.5\variants\FEATHE~1;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\ARM-NO~1\9-2019q4\arm-none-eabi\include\c++\4.8.3;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\ARM-NO~1\9-2019q4\arm-none-eabi\include\c++\4.8.3\arm-none-eabi;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\ARM-NO~1\9-2019q4\arm-none-eabi\include\c++\4.8.3\bits;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\ARM-NO~1\9-2019q4\arm-none-eabi\include;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\ARM-NO~1\9-2019q4\arm-none-eabi\include\sys;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\1.6.5\system;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\avr;$(ProjectDir)..\..\..\..\..\..\AppData\Local\arduino15\packages\adafruit\hardware\samd\usb;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\ARM-NO~1\9-2019q4\lib\gcc\arm-none-eabi\4.8.3\include;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0\Device\ATMEL\samd21\include\component;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\CMSIS-Atmel\1.2.0\CMSIS\Device\ATMEL\samd21\include\component;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\CMSIS-Atmel\1.2.0\CMSIS\Device\ATMEL\samd21\include\instance;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\CMSIS-Atmel\1.1.0\CMSIS\Device\ATMEL\samd21\include\pio;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\CMSIS-Atmel\1.2.0\CMSIS\Device\ATMEL\samd21\include\component;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0\Device\ATMEL\samd21\include;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0\CMSIS\include;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0\Device\ATMEL\samd21\include\component;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0\Device\ATMEL\samd21\include\instance;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0\Device\ATMEL\samd21\include\pio;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\5404C4~1.0\Device\ATMEL\samd21\include\component;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\CMSIS-Atmel\1.1.0\CMSIS\Device\ATMEL\samd21\include\component;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\CMSIS-Atmel\1.1.0\CMSIS\Device\ATMEL\samd21\include\instance;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\CMSIS-Atmel\1.1.0\CMSIS\Device\ATMEL\samd21\include\pio;$(ProjectDir)..\..\..\..\..\..\AppData\Local\ARDUIN~1\packages\adafruit\tools\CMSIS\CMSIS-Atmel\1.1.0\CMSIS\Device\ATMEL\samd21\include\component;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>$(ProjectDir)__vm\.Test_PWM_Level-shift.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
+      <PreprocessorDefinitions>_VMDEBUG=1;F_CPU=48000000L;ARDUINO=108013;ARDUINO_SAMD_ZERO;ARDUINO_ARCH_SAMD;ARM_MATH_CM0PLUS;ADAFRUIT_FEATHER_M0;__SAMD21G18A__;USB_VID=0x239A;USB_PID=0x800B;USBCON;USB_CONFIG_POWER=100;__cplusplus=201103L;_VMICRO_INTELLISENSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="VisualMicro" />
+  </ItemGroup>
+  <PropertyGroup>
+    <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="Test_PWM_Level-shift.ino">
+      <FileType>CppCode</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="__vm\.Test_PWM_Level-shift.vsarduino.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties arduino.upload.port="COM17" config.Debug.customdebug_adafruit_adafruit_feather_m0_debugger_type="none" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>
