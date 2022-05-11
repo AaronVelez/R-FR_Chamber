@@ -13,6 +13,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_SHT31", "Test_SHT31\Te
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_PWM_Level-shift", "Test_PWM_Level-shift\Test_PWM_Level-shift.vcxproj", "{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "R_Chamber_SHT31", "R_Chamber_SHT31\R_Chamber_SHT31.vcxproj", "{C6646EEE-D8C3-40CA-9BE3-6A8418E38554}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FR_Chamber_SHT31", "FR_Chamber_SHT31\FR_Chamber_SHT31.vcxproj", "{52770FAA-4E4A-4981-958F-A9EF2ABED6A0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -39,6 +43,14 @@ Global
 		{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}.Debug|x86.Build.0 = Debug|Win32
 		{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}.Release|x86.ActiveCfg = Release|Win32
 		{DD0C2BA4-D0EC-4343-9F96-D82E4E107650}.Release|x86.Build.0 = Release|Win32
+		{C6646EEE-D8C3-40CA-9BE3-6A8418E38554}.Debug|x86.ActiveCfg = Debug|Win32
+		{C6646EEE-D8C3-40CA-9BE3-6A8418E38554}.Debug|x86.Build.0 = Debug|Win32
+		{C6646EEE-D8C3-40CA-9BE3-6A8418E38554}.Release|x86.ActiveCfg = Release|Win32
+		{C6646EEE-D8C3-40CA-9BE3-6A8418E38554}.Release|x86.Build.0 = Release|Win32
+		{52770FAA-4E4A-4981-958F-A9EF2ABED6A0}.Debug|x86.ActiveCfg = Debug|Win32
+		{52770FAA-4E4A-4981-958F-A9EF2ABED6A0}.Debug|x86.Build.0 = Debug|Win32
+		{52770FAA-4E4A-4981-958F-A9EF2ABED6A0}.Release|x86.ActiveCfg = Release|Win32
+		{52770FAA-4E4A-4981-958F-A9EF2ABED6A0}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

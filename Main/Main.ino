@@ -151,8 +151,6 @@ const char* FileName[] = { "2020.txt", "2021.txt", "2022.txt", "2023.txt", "2024
 			"2100.txt" };
 const String Headers = F("UTC_UNIX_t\tLocal_UNIX_t\tyear\tmonth\tday\thour\tminute\tsecond\t\
 AC_OK\tBatVolt\t\
-R_AirTemp\tR_AirRH\t\
-FR_AirTemp\tFR_AirRH\t\
 R_Actinic_ON\tFR_Actinic_ON\t\
 R_Fan_ON\tFR_Fan_ON\t\
 FR_1_LEDs_ON\tFR_2_LEDs_ON\t\
@@ -202,7 +200,7 @@ time_t t_WiFiCnxTry = 0;      // Last time a (re)connection to internet happened
 const int WiFiCnx_frq = 150;  // (re)connection to internet frequency in seconds
 
 byte SensorsOK = B00000000;     // Byte variable to store real time sensor status
-byte SensorsOKAvg = B00011111;  // Byte variable to store SD card average sensor status
+byte SensorsOKAvg = B00000001;  // Byte variable to store SD card average sensor status
 int SensorsOKIoT = 0;           // Variable to send sensor status in decimal format
 
 time_t t_DataBucket = 0;             // Last time Data was sent to bucket (in UNIX time format) 
@@ -283,20 +281,16 @@ bool FR_Fan_ON = false;
 
 
 ////// Measured instantaneous variables
-double Temp_R = -1;        // Air temperature RED chamber
-double RH_R = -1;          // Air RH value RED chamber
-double Temp_FR = -1;        // Air temperature FARRED chamber 
-double RH_FR = -1;          // Air RH value FARRED chamber
+double IoT_Temp_R = -1;        // Air temperature RED chamber
+double IoT_RH_R = -1;          // Air RH value RED chamber
+double IoT_Temp_FR = -1;        // Air temperature FARRED chamber 
+double IoT_RH_FR = -1;          // Air RH value FARRED chamber
 bool AC_OK = true;			// Monitor AC power supply OK
 double USBVolt = 0;			// USB voltage
 
 
 ////// Variables to store sum for eventual averaging
 //Environmental
-double TempSum_R = 0;
-double RHSum_R = 0;
-double TempSum_FR = 0;
-double RHSum_FR = 0;
 int AC_OK_Sum = 0;
 double USBVolt_Sum = 0;
 // Actinic lamps
@@ -320,10 +314,6 @@ int FR_Fan_ON_Sum = 0;
 
 ////// Values to be logged. They will be the average over the last 5 minutes
 //Environmental
-double TempAvg_R = 0;
-double RHAvg_R = 0;
-double TempAvg_FR = 0;
-double RHAvg_FR = 0;
 double AC_OK_Avg = 0;
 double USBVolt_Avg = 0;
 // Actinic lamps
@@ -353,10 +343,10 @@ const double Kp = 2; //
 const double Ki = 5; //
 const double Kd = 1; //
 
-PID R_Temp_PID(&Temp_R, &R_Fan_ON_t, &R_Temp_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
-PID FR_Temp_PID(&Temp_FR, &FR_Fan_ON_t, &FR_Temp_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
-PID R_RH_PID(&RH_R, &R_Fan_ON_t, &R_RH_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
-PID FR_RH_PID(&RH_FR, &FR_Fan_ON_t, &FR_RH_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
+PID R_Temp_PID(&IoT_Temp_R, &R_Fan_ON_t, &R_Temp_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
+PID FR_Temp_PID(&IoT_Temp_FR, &FR_Fan_ON_t, &FR_Temp_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
+PID R_RH_PID(&IoT_RH_R, &R_Fan_ON_t, &R_RH_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
+PID FR_RH_PID(&IoT_RH_FR, &FR_Fan_ON_t, &FR_RH_Set, Kp, Ki, Kd, AUTOMATIC, REVERSE);
 
 //////////////////////////////////////////////////////////////////////////
 // the setup function runs once when you press reset or power the board //
@@ -508,13 +498,13 @@ void setup() {
 			}
 		};
 		// Environmental IoT Data
-		thing[“R_Env_Data”] << [](pson& in) {
-			Temp_R = in["IoT_Temp_R"];
-			RH_R = in["IoT_RH_R"];
+		thing["R_Env_IoT_Data_in"] << [](pson& in) {
+			IoT_Temp_R = in["IoT_Temp_R"];
+			IoT_RH_R = in["IoT_RH_R"];
 		};
-		thing[“FR_Env_Data”] << [](pson& in) {
-			Temp_FR = in["IoT_Temp_FR"];
-			RH_FR = in["IoT_RH_FR"];
+		thing["FR_Env_IoT_Data_in"] << [](pson& in) {
+			IoT_Temp_FR = in["IoT_Temp_FR"];
+			IoT_RH_FR = in["IoT_RH_FR"];
 		};
 		// Red Actinic Light
 		thing["R_Actinic_Manual_Ctrl"] << [](pson& in) {
@@ -888,19 +878,11 @@ void setup() {
 	thing["RT_FR_2_LEDs_ON"] >> [](pson& out) { out = FR_2_LEDs_ON; };
 	thing["RT_R_Fan_ON "] >> [](pson& out) { out = R_Fan_ON; };
 	thing["RT_FR_Fan_ON "] >> [](pson& out) { out = FR_Fan_ON; };
-	thing["RT_Temp_Red"] >> [](pson& out) { out = Temp_R; };
-	thing["RT_RH_Red"] >> [](pson& out) { out = RH_R; };
-	thing["RT_Temp_FarRed"] >> [](pson& out) { out = Temp_FR; };
-	thing["RT_RH_FarRed"] >> [](pson& out) { out = RH_FR; };
 	thing["RT_AC_OK"] >> [](pson& out) { out = AC_OK; };
 	thing["RT_USB_Voltage"] >> [](pson& out) { out = USBVolt; };
 	
 	thing["Avg_Data"] >> [](pson& out) {
 		out["Time_Stamp"] = SD_local_t;
-		out["Temperature_Red_Chamber"] = TempAvg_R;
-		out["Relative_Humidity_Red_Chamber"] = RHAvg_R;
-		out["Temperature_FarRed_Chamber"] = TempAvg_FR;
-		out["Relative_Humidity_FarRed_Chamber"] = RHAvg_FR;
 		out["Red_Chamber_Actinic_Manual_Ctrl"] = R_Actinic_Manual_Ctrl_Avg;
 		out["Red_Chamber_Actinic_ON"] = R_Actinic_ON_Avg;
 		out["FarRed_Chamber_Actinic_Manual_Ctrl"] = FR_Actinic_Manual_Ctrl_Avg;
@@ -1064,45 +1046,7 @@ void loop() {
 	if ((s % 20 == 0) && (s != LastSum)) {
 		if (debug) { Serial.println(F("Time to read sensors")); }
 
-		/*
-		// Read Red chamber Temp/RH sensor
-		if (debug) { Serial.println(F("Reading Red sensor")); }
-		digitalWrite(I2C_Select_0_PIN, LOW);
-		sht3x_data = sht3x.readTemperatureAndHumidity(sht3x.eRepeatability_High);
-		if (sht3x_data.ERR == 0) {
-			Temp_R = sht3x_data.TemperatureC;
-			RH_R = sht3x_data.Humidity;
-			bitWrite(SensorsOK, 0, 1);
-			bitWrite(SensorsOK, 1, 1);
-		}
-		else {
-			Temp_R = -1;
-			RH_R = -1;
-			bitWrite(SensorsOK, 0, 0);
-			bitWrite(SensorsOK, 1, 0);
-		}
-		delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
-
-		// Read Farred chamber Temp/RH sensor
-		if (debug) { Serial.println(F("Reading Far red sensor")); }
-		digitalWrite(I2C_Select_0_PIN, HIGH);
-		delay(1000);
-		sht3x_data = sht3x.readTemperatureAndHumidity(sht3x.eRepeatability_High);
-		if (sht3x_data.ERR == 0) {
-			Temp_FR = sht3x_data.TemperatureC;
-			RH_FR = sht3x_data.Humidity;
-			bitWrite(SensorsOK, 2, 1);
-			bitWrite(SensorsOK, 3, 1);
-		}
-		else {
-			Temp_FR = -1;
-			RH_FR = -1;
-			bitWrite(SensorsOK, 2, 0);
-			bitWrite(SensorsOK, 3, 0);
-		}
-		delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
-		digitalWrite(I2C_Select_0_PIN, LOW);
-		*/
+		
 		// Read I2C ADC
 		if (debug) { Serial.println(F("Reading I2C ADC")); }
 		// With gain 1x, 1 bit  = 2mV
@@ -1117,38 +1061,26 @@ void loop() {
 		else { AC_OK = false; }
 		// Record if ADC sensor is OK
 		if (adcSensor.isConnected() == 1) {
-			bitWrite(SensorsOK, 4, 1);
+			bitWrite(SensorsOK, 0, 1);
 		}
 		else {
-			bitWrite(SensorsOK, 4, 0);
+			bitWrite(SensorsOK, 0, 0);
 		}
 		delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
 
 
 		// Record if sensor reads were OK
 		SensorsOKAvg = SensorsOKAvg & SensorsOK;
-		if (debug && (!bitRead(SensorsOK, 0) || !bitRead(SensorsOK, 1) || !bitRead(SensorsOK, 2) || !bitRead(SensorsOK, 3) || !bitRead(SensorsOK, 4))) {
+		if (debug && !bitRead(SensorsOK, 0)) {
 			Serial.println(F("At least 1 sensor read failed"));
 			Serial.print(F("SensorOK byte: "));
 			Serial.println(SensorsOK, BIN);
-			Serial.print(F("R_Temp: "));
-			Serial.println(Temp_R);
-			Serial.print(F("R_RH: "));
-			Serial.println(RH_R);
-			Serial.print(F("FR_Temp: "));
-			Serial.println(Temp_FR);
-			Serial.print(F("FR_RH: "));
-			Serial.println(RH_FR);
-			Serial.print(F("ADC_BatVolt: "));
+			Serial.print(F("ADC_USBVolt: "));
 			Serial.println(USBVolt);
 		}
 
 		// Add new values to sum
 		// Environment
-		TempSum_R += Temp_R;
-		RHSum_R += RH_R;
-		TempSum_FR += Temp_FR;
-		RHSum_FR += RH_FR;
 		AC_OK_Sum += AC_OK;
 		USBVolt_Sum += USBVolt;
 		// Actinic
@@ -1311,10 +1243,6 @@ void loop() {
 	if (((m % 5) == 0) && (m != LastLog) && (SumNum > 0)) {
 		if (debug) { Serial.println(F("Time to calculate averages and log to SD card")); }
 		// Calculate averages
-		TempAvg_R = TempSum_R / SumNum;
-		RHAvg_R = RHSum_R / SumNum;
-		TempAvg_FR = TempSum_FR / SumNum;
-		RHAvg_FR = RHSum_FR / SumNum;
 		AC_OK_Avg = AC_OK_Sum / SumNum;
 		USBVolt_Avg = USBVolt_Sum / SumNum;
 		// Actinic
@@ -1370,8 +1298,6 @@ void loop() {
 		// Log to SD card
 		LogString = (String)(unsigned long)UTC_t + "\t" + (unsigned long)local_t + "\t" + yr + "\t" + mo + "\t" + dy + "\t" + h + "\t" + m + "\t" + s + "\t" +
 			String(AC_OK_Avg, 2) + "\t" + String(USBVolt_Avg, 4) + "\t" +
-			String(TempAvg_R, 4) + "\t" + String(RHAvg_R, 4) + "\t" +
-			String(TempAvg_FR, 4) + "\t" + String(RHAvg_FR, 4) + "\t" +
 			String(R_Actinic_ON_Avg, 2) + "\t" + String(FR_Actinic_ON_Avg, 2) + "\t" +
 			String(R_Fan_ON_Avg, 2) + "\t" + String(FR_Fan_ON_Avg, 2) + "\t" +
 			String(FR_1_LEDs_ON_Avg, 2) + "\t" + String(FR_2_LEDs_ON_Avg, 2) + "\t" +
@@ -1388,10 +1314,6 @@ void loop() {
 		// Reset Shift Registers
 		LastLog = m;
 
-		TempSum_R = 0;
-		RHSum_R = 0;
-		TempSum_FR = 0;
-		RHSum_FR = 0;
 		AC_OK_Sum = 0;
 		USBVolt_Sum = 0;
 		
@@ -1555,61 +1477,49 @@ void loop() {
 					else if (i == 9) {	// Battery voltage
 						USBVolt_Avg = buffer.toFloat();
 					}
-					else if (i == 10) {  // Red chamber Temp
-						TempAvg_R = buffer.toFloat();
-					}
-					else if (i == 11) {  // Red chamber RH
-						RHAvg_R = buffer.toFloat();
-					}
-					else if (i == 12) {  // Farred chamber Temp
-						TempAvg_FR = buffer.toFloat();
-					}
-					else if (i == 13) { // Farred chamber RH
-						RHAvg_FR = buffer.toFloat();
-					}
-					else if (i == 14) { // Red chamber Actinic lamp ON?
+					else if (i == 10) { // Red chamber Actinic lamp ON?
 						R_Actinic_ON_Avg = buffer.toInt();
 					}
-					else if (i == 15) { // Farred chamber Actinic lamp ON?
+					else if (i == 11) { // Farred chamber Actinic lamp ON?
 						FR_Actinic_ON_Avg = buffer.toInt();
 					}
-					else if (i == 16) { // Red chamber Fan ON?
+					else if (i == 12) { // Red chamber Fan ON?
 						R_Fan_ON_Avg = buffer.toInt();
 					}
-					else if (i == 17) { // Farred chamber Fan ON?
+					else if (i == 13) { // Farred chamber Fan ON?
 						FR_Fan_ON_Avg = buffer.toInt();
 					}
-					else if (i == 18) { // FR LEDs 1 ON?
+					else if (i == 14) { // FR LEDs 1 ON?
 						FR_1_LEDs_ON_Avg = buffer.toInt();
 					}
-					else if (i == 19) { // FR LEDs 2 ON?
+					else if (i == 15) { // FR LEDs 2 ON?
 						FR_2_LEDs_ON_Avg = buffer.toInt();
 					}
-					else if (i == 20) { // FR LEDs 1 PWM
+					else if (i == 16) { // FR LEDs 1 PWM
 						FR_1_LEDs_PWM_Duty_Cycle_Avg = buffer.toInt();
 					}
-					else if (i == 21) { // FR LEDs 2 PWM
+					else if (i == 17) { // FR LEDs 2 PWM
 						FR_2_LEDs_PWM_Duty_Cycle_Avg = buffer.toInt();
 					}
-					else if (i == 22) { // Manual Actinic Ctrl in red chamber
+					else if (i == 18) { // Manual Actinic Ctrl in red chamber
 						R_Actinic_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 23) { // Manual Actinic Ctrl in farred chamber
+					else if (i == 19) { // Manual Actinic Ctrl in farred chamber
 						FR_Actinic_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 24) { // Manual LEDs 1 Ctrl in red chamber
+					else if (i == 20) { // Manual LEDs 1 Ctrl in red chamber
 						FR_1_LEDs_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 25) { // Manual LEDs 1 Ctrl in farred chamber
+					else if (i == 21) { // Manual LEDs 1 Ctrl in farred chamber
 						FR_2_LEDs_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 26) { // Manual Fan Ctrl in red chamber
+					else if (i == 22) { // Manual Fan Ctrl in red chamber
 						R_Fan_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 27) { // Manual Fan Ctrl in farred chamber
+					else if (i == 23) { // Manual Fan Ctrl in farred chamber
 						FR_Fan_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 28) { // SensorsOK
+					else if (i == 24) { // SensorsOK
 						SensorsOKIoT = buffer.toInt();
 					}
 				}

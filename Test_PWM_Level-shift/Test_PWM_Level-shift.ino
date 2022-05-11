@@ -33,9 +33,16 @@ void setup() {
 	pinMode(FR_2_LEDs_PIN, OUTPUT);
 	digitalWrite(FR_2_LEDs_PIN, HIGH);
 	pinMode(FR_1_LEDs_PWM_PIN, OUTPUT);
-	analogWrite(FR_1_LEDs_PWM_PIN, 64);
+	analogWrite(FR_1_LEDs_PWM_PIN, 254);
 	pinMode(FR_2_LEDs_PWM_PIN, OUTPUT);
-	analogWrite(FR_2_LEDs_PWM_PIN, 190);
+	analogWrite(FR_2_LEDs_PWM_PIN, 254);
+
+
+	// Actinic
+	pinMode(FR_Chamber_Actinic_PIN, OUTPUT);
+	digitalWrite(FR_Chamber_Actinic_PIN, HIGH);
+	
+
 
 }
 

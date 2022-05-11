@@ -119,7 +119,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties arduino.upload.port="COM17" config.Debug.customdebug_adafruit_adafruit_feather_m0_debugger_type="none" />
+      <UserProperties arduino.upload.port="COM16" config.Debug.customdebug_adafruit_adafruit_feather_m0_debugger_type="none" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>
