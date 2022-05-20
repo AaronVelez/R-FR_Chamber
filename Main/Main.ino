@@ -55,7 +55,7 @@ const char iot_data_bucket[] = IoT_DATA_BUCKET;
 ////// Comunication libraries
 #include <Wire.h>
 #include <SPI.h>
-#include <WiFiNINA.h>
+#include <WiFiNINA.h>		// USE ADAFRUIT VERSSION!
 #define SPIWIFI       SPI  // The SPI port
 #define SPIWIFI_SS    13   // Chip select pin
 #define ESP32_RESETN  12   // Reset pin
@@ -1045,6 +1045,19 @@ void loop() {
 	////// AND record sensor values for 5-minute averages (each 20 seconds)
 	if ((s % 20 == 0) && (s != LastSum)) {
 		if (debug) { Serial.println(F("Time to read sensors")); }
+
+		// Debug Temp and RH IoT values
+		if (debug) {
+			Serial.print(F("Red IoT Temp: "));
+			Serial.println(IoT_Temp_R, 2);
+			Serial.print(F("Red IoT RH: "));
+			Serial.println(IoT_RH_R, 2);
+
+			Serial.print(F("Far-Red IoT Temp: "));
+			Serial.println(IoT_Temp_FR, 2);
+			Serial.print(F("Far-Red IoT RH: "));
+			Serial.println(IoT_RH_FR, 2);
+		}
 
 		
 		// Read I2C ADC

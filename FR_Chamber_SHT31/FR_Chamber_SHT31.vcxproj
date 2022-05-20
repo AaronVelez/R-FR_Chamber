@@ -107,7 +107,6 @@
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="..\Main\Time Functions.ino" />
     <None Include="FR_Chamber_SHT31.ino">
       <FileType>CppCode</FileType>
     </None>

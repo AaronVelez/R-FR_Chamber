@@ -16,9 +16,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Main.ino" />
-    <None Include="Time Functions.ino" />
     <None Include="Light Functions.ino" />
     <None Include="Setpoint Functions.ino" />
+    <None Include="Time Functions.ino" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.Main.vsarduino.h">

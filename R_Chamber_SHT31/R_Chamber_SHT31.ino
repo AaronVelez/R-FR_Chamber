@@ -113,7 +113,7 @@ Timezone mxCT(mxCDT, mxCST);
 
 ////// Library for SHT31 Temperature and Humidity Sensor
 #include <DFRobot_SHT3x.h>
-DFRobot_SHT3x sht3x(&Wire,/*address=*/0x45,/*RST=*/4);
+DFRobot_SHT3x sht3x(&Wire,/*address=*/0x44,/*RST=*/4);
 DFRobot_SHT3x::sRHAndTemp_t sht3x_data;
 
 
@@ -220,14 +220,15 @@ float RHAvg = 0;
 // the setup function runs once when you press reset or power the board
 void setup() {
     ////// Initialize and setup M5Stack
+    //M5.begin(true, true, true, true, kMBusModeOutput);
     M5.begin();
+    Wire.begin(32, 33);
     M5.Lcd.println(F("M5 started"));
 
-
-    if (ssidIsHex) {
-        String ssidStr = HexString2ASCIIString(ssidHEX);
-        ssidStr.toCharArray(ssid, sizeof(ssid) + 1);
-    }
+#ifdef WiFi_SSID_is_HEX
+    String ssidStr = HexString2ASCIIString(ssidHEX);
+    ssidStr.toCharArray(ssid, sizeof(ssid) + 1);
+#endif
 
     M5.Lcd.print(F("SSID name: "));
     M5.Lcd.println(ssid);
@@ -319,7 +320,7 @@ void setup() {
     M5.Lcd.print(F("Chip serial number: "));
     M5.Lcd.println(sht3x.readSerialNumber());
     if (!sht3x.softReset()) {
-        M5.Lcd.print(F("Failed to initialize the chip...."));
+        M5.Lcd.print(F("Failed to reset the chip...."));
     }
 
     // Setup finish message
@@ -384,11 +385,13 @@ void loop() {
             bitWrite(SensorsOK, 0, 1);
         }
         else {
-            Temp = 25;
-            RH = 25;
+            Temp = -1;
+            RH = -1;
             bitWrite(SensorsOK, 0, 0);
         }
 
+        // Send data to IoT device "R_FR_Chamber"
+        thing.call_device("R_FR_Chamber", "R_Env_IoT_Data_in", thing["R_Env_IoT_Data_out"]);
 
         // Record if sensor reads were OK
         SensorsOKAvg = SensorsOKAvg & SensorsOK;
@@ -660,10 +663,10 @@ void loop() {
         // Bottom right, Info
         M5.Lcd.fillRect(160, 100, 160, 100, M5.Lcd.color565(128, 128, 128));
         M5.Lcd.setTextColor(M5.Lcd.color565(255, 255, 255));
-        M5.Lcd.setFreeFont(&FreeSans9pt7b);
+        M5.Lcd.setFreeFont(&FreeSans15pt7b);
         M5.Lcd.setTextDatum(TL_DATUM);
-        M5.Lcd.drawString(F("Red Chamber"), 10 + 160, 10 + 100);
-
+        M5.Lcd.drawString(F("Red"), 10 + 160, 10 + 100);
+        M5.Lcd.drawString(F("Chamber"), 10 + 160, 10 + 100 + 25);
 
         // Date and time
         M5.Lcd.fillRect(0, 200, 320, 240, M5.Lcd.color565(0, 0, 0));
@@ -735,4 +738,64 @@ float CalculateVPD(float AirVP, float LeafVP) {
     float result = 0;
     result = LeafVP - AirVP;
     return result;
+}
+
+////// Get time from NTP an dupdate RTC and local time variables
+// For M5 BM8563 RTC
+bool GetNTPTime() {
+    if (timeClient.forceUpdate()) {
+        UTC_t = timeClient.getEpochTime();
+        // set system time to UTC unix timestamp
+        setTime(UTC_t);
+        // Set RTC time to UTC time from system time
+        RTCDate.Year = year();
+        RTCDate.Month = month();
+        RTCDate.Date = day();
+        RTCtime.Hours = hour();
+        RTCtime.Minutes = minute();
+        RTCtime.Seconds = second();
+        M5.Rtc.SetTime(&RTCtime);
+        M5.Rtc.SetDate(&RTCDate);
+        // Convert to local time
+        local_t = mxCT.toLocal(UTC_t);
+        // Set system time lo local time
+        setTime(local_t);
+        LastNTP = UTC_t;
+        if (debug) {
+            Serial.println(F("NTP client update success!"));
+            Serial.print(F("UTC time from NTP is: "));
+            Serial.println( (unsigned long)UTC_t );
+        }
+        return true;
+    }
+    else {
+        if (debug) { Serial.println(F("NTP update not succesfull")); }
+        return false;
+    }
+}
+
+
+////// Get time from RTC and update UTC and local time variables
+// For M5 BM8563 RTC
+void GetRTCTime() {
+    M5.Rtc.GetTime(&RTCtime);   // Get UTC time from M5 RTC.
+    M5.Rtc.GetDate(&RTCDate);   // Get UC date from M5 RTC
+
+    setTime(RTCtime.Hours,                   // Set system time to UTC time
+        RTCtime.Minutes,
+        RTCtime.Seconds,
+        RTCDate.Date,
+        RTCDate.Month,
+        RTCDate.Year);
+    UTC_t = now();                      // Get UTC time from system time in UNIX format
+
+    
+    local_t = mxCT.toLocal(UTC_t);      // Calculate local time in UNIX format
+    setTime(local_t);                   // Set system time to local
+    s = second();                       // Set time variables to local time from system time
+    m = minute();
+    h = hour();
+    dy = day();
+    mo = month();
+    yr = year();
 }

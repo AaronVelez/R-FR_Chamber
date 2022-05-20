@@ -102,6 +102,5 @@ typedef long pthread_cond_t;
 #define ESP_LOGI(tag, ...)
 
 #include "R_Chamber_SHT31.ino"
-#include "..\Main\Time Functions.ino"
 #endif
 #endif

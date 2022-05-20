@@ -16,7 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="FR_Chamber_SHT31.ino" />
-    <None Include="..\Main\Time Functions.ino" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.FR_Chamber_SHT31.vsarduino.h">
