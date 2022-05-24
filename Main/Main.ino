@@ -160,7 +160,7 @@ FR_1_LEDs_Manual_Ctrl\tFR_2_LEDs_Manual_Ctrl\t\
 R_Fan_Manual_Ctrl\tFR_Fan_Manual_Ctrl\t\
 SensorsOK\t\
 SentIoT");
-const int HeaderN = 29;	// cero indexed
+const int HeaderN = 26;	// cero indexed
 String LogString = "";
 
 
@@ -375,8 +375,17 @@ void setup() {
 		Serial.println(ssid);
 	}
 	
-	// Reset WiFi board and try to connect 5 times to WiFi; if not successful, continue to loop
-	WiFiConnectTry();
+	// Try to connect to WiFi; if not successful, reset WiFi board
+	if (password == "") { WiFi.begin(ssid); }
+		else { WiFi.begin(ssid, password); }
+		delay(1000);
+		Serial.print(F("WiFi status: "));
+		Serial.println(WiFi.status());
+	
+	if (WiFi.status() != WL_CONNECTED) {
+		WiFiConnectTry();
+	}
+	
 
 
 	////// Set pin modes of pins not associated with libraries
@@ -678,12 +687,21 @@ void setup() {
 			}
 		};
 		thing["FR_Temp_Set"] << [](pson& in) {
+			if (in.is_empty()) { FR_Temp_Set = IoT_Temp_R; }
+			else {
+				FR_Temp_Set = IoT_Temp_R;
+			}
+		};
+		/*
+		thing["FR_Temp_Set"] << [](pson& in) {
 			if (in.is_empty()) { in = Get_Setpoint("FR_Temp_Set.txt"); }
 			else {
 				Set_Setpoint("FR_Temp_Set.txt", (float)in);
 				FR_Temp_Set = in;
 			}
 		};
+		*/
+
 		thing["R_RH_Set"] << [](pson& in) {
 			if (in.is_empty()) { in = Get_Setpoint("R_RH_Set.txt"); }
 			else {
@@ -914,12 +932,6 @@ void setup() {
 		Serial.println(F("RTC start fail"));
 	}
 	delay(250); // Wait to I2C device to release bus. It helps to prevent I2C bus getting stuck in noisy line
-
-
-	////// Update time from NTP or RTC if WiFi not available
-	if (!GetNTPTime()) {
-		GetRTCTime();
-	}
 
 
 	//////// If internet, start NTP client engine
@@ -1460,6 +1472,10 @@ void loop() {
 			UTC_t - t_DataBucket > DataBucket_frq) {
 			t_DataBucket = UTC_t; // Record Data Bucket update TRY; even if it is not succesfful
 			// extract data from payload string (str)
+			if (debug) {
+				Serial.print(F("RAW payload string: "));
+				Serial.println(str);
+			}
 			for (int i = 0; i < HeaderN; i++) {
 				String buffer = str.substring(0, str.indexOf('\t'));
 				if (i != 7) { 	// Do not read seconds info
@@ -1575,8 +1591,9 @@ void loop() {
 					LogFile.println(str);
 					LogFile.close();
 				}
-				PayloadRdy = false;
+				PayloadRdy = false;		// Payload in cloud, str String destroyed in the process
 			}
+			PayloadRdy = false;		// Payload upload NOT succesful, yet str String destroyed in the process. Need to look for payload in SD card again
 		}
 	}
 
@@ -1614,6 +1631,11 @@ void WiFiConnectTry() {
 	delay(500);
 	digitalWrite(ESP32_RESETN, HIGH);
 	delay(500);
+
+	if (debug) {
+		Serial.print(F("SSID name: "));
+		Serial.println(ssid);
+	}
 
 	for (int i = 0; i <= 5; i++) {
 		if (WiFi.status() != WL_CONNECTED) {
