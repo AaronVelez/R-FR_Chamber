@@ -214,26 +214,26 @@ bool R_Actinic_Manual_ON = false;
 bool R_Actinic_ON = false;
 bool R_Actinic_Period_1 = true;
 bool R_Actinic_Period_2 = false;
-bool R_Actinic_Period_3 = false;
+//bool R_Actinic_Period_3 = false;
 unsigned int R_Actinic_Period_1_ON = 0;
 unsigned int R_Actinic_Period_2_ON = 0;
-unsigned int R_Actinic_Period_3_ON = 0;
+//unsigned int R_Actinic_Period_3_ON = 0;
 unsigned int R_Actinic_Period_1_OFF = 0;
 unsigned int R_Actinic_Period_2_OFF = 0;
-unsigned int R_Actinic_Period_3_OFF = 0;
+//unsigned int R_Actinic_Period_3_OFF = 0;
 /// Variables for Actinic Lamp in Farred Chamber
 bool FR_Actinic_Manual_Ctrl = false;
 bool FR_Actinic_Manual_ON = false;
 bool FR_Actinic_ON = false;
 bool FR_Actinic_Period_1 = true;
 bool FR_Actinic_Period_2 = false;
-bool FR_Actinic_Period_3 = false;
+//bool FR_Actinic_Period_3 = false;
 unsigned int FR_Actinic_Period_1_ON = 0;
 unsigned int FR_Actinic_Period_2_ON = 0;
-unsigned int FR_Actinic_Period_3_ON = 0;
+//unsigned int FR_Actinic_Period_3_ON = 0;
 unsigned int FR_Actinic_Period_1_OFF = 0;
 unsigned int FR_Actinic_Period_2_OFF = 0;
-unsigned int FR_Actinic_Period_3_OFF = 0;
+//unsigned int FR_Actinic_Period_3_OFF = 0;
 /// Variables for environmental control
 bool Temp_Ctrl = true;	// If false, control is over Relative humidity
 double R_Temp_Set = 20;
@@ -248,13 +248,13 @@ bool FR_1_LEDs_ON = false;
 int FR_1_LEDs_PWM_Duty_Cycle = 0;
 bool FR_1_LEDs_Period_1 = true;
 bool FR_1_LEDs_Period_2 = false;
-bool FR_1_LEDs_Period_3 = false;
+//bool FR_1_LEDs_Period_3 = false;
 unsigned int FR_1_LEDs_Period_1_ON = 0;
 unsigned int FR_1_LEDs_Period_2_ON = 0;
-unsigned int FR_1_LEDs_Period_3_ON = 0;
+//unsigned int FR_1_LEDs_Period_3_ON = 0;
 unsigned int FR_1_LEDs_Period_1_OFF = 0;
 unsigned int FR_1_LEDs_Period_2_OFF = 0;
-unsigned int FR_1_LEDs_Period_3_OFF = 0;
+//unsigned int FR_1_LEDs_Period_3_OFF = 0;
 // Circuit 2
 bool FR_2_LEDs_Manual_Ctrl = false;
 bool FR_2_LEDs_Manual_ON = false;
@@ -262,13 +262,13 @@ bool FR_2_LEDs_ON = false;
 int FR_2_LEDs_PWM_Duty_Cycle = 0;
 bool FR_2_LEDs_Period_1 = true;
 bool FR_2_LEDs_Period_2 = false;
-bool FR_2_LEDs_Period_3 = false;
+//bool FR_2_LEDs_Period_3 = false;
 unsigned int FR_2_LEDs_Period_1_ON = 0;
 unsigned int FR_2_LEDs_Period_2_ON = 0;
-unsigned int FR_2_LEDs_Period_3_ON = 0;
+//unsigned int FR_2_LEDs_Period_3_ON = 0;
 unsigned int FR_2_LEDs_Period_1_OFF = 0;
 unsigned int FR_2_LEDs_Period_2_OFF = 0;
-unsigned int FR_2_LEDs_Period_3_OFF = 0;
+//unsigned int FR_2_LEDs_Period_3_OFF = 0;
 /// Variables for Fans
 bool R_Fan_Manual_Ctrl = false;
 bool R_Fan_Manual_ON = false;
@@ -336,7 +336,9 @@ double FR_Fan_ON_Avg = 0;
 
 
 ////// PID variables and controls
-int WindowSize = 300;		// Windows size in seconds. Each n seconds the PID sets how much of that time the fan is ON, remainder is OFF. There is a minimum ON time set in setup
+const int WindowSize = 600;		// Windows size in seconds. Each n seconds the PID sets how much of that time the fan is ON, remainder is OFF.
+const int MinOnTime = 60;		// Fan is ON at least this number of seconds regardless PID
+const int MinOffTime = 6;		// Fan is not turned OFF if OFF time will be less than this value in seconds
 time_t windowStartTime = 0;
 
 const double Kp = 2; // 
@@ -384,6 +386,9 @@ void setup() {
 	
 	if (WiFi.status() != WL_CONNECTED) {
 		WiFiConnectTry();
+	}
+	else {
+		Serial.println(F("Connected to Internet!!!"));
 	}
 	
 
@@ -437,25 +442,25 @@ void setup() {
 		R_Actinic_Manual_ON = (bool)Get_Setpoint("R_Actinic_Manual_ON.txt");
 		R_Actinic_Period_1 = (bool)Get_Setpoint("R_Actinic_Period_1.txt");
 		R_Actinic_Period_2 = (bool)Get_Setpoint("R_Actinic_Period_2.txt");
-		R_Actinic_Period_3 = (bool)Get_Setpoint("R_Actinic_Period_3.txt");
+		//R_Actinic_Period_3 = (bool)Get_Setpoint("R_Actinic_Period_3.txt");
 		R_Actinic_Period_1_ON = (int)Get_Setpoint("R_Actinic_Period_1_ON.txt");
 		R_Actinic_Period_2_ON = (int)Get_Setpoint("R_Actinic_Period_2_ON.txt");
-		R_Actinic_Period_3_ON = (int)Get_Setpoint("R_Actinic_Period_3_ON.txt");
+		//R_Actinic_Period_3_ON = (int)Get_Setpoint("R_Actinic_Period_3_ON.txt");
 		R_Actinic_Period_1_OFF = (int)Get_Setpoint("R_Actinic_Period_1_OFF.txt");
 		R_Actinic_Period_2_OFF = (int)Get_Setpoint("R_Actinic_Period_2_OFF.txt");
-		R_Actinic_Period_3_OFF = (int)Get_Setpoint("R_Actinic_Period_3_OFF.txt");
+		//R_Actinic_Period_3_OFF = (int)Get_Setpoint("R_Actinic_Period_3_OFF.txt");
 		// Far-red Actinic Light
 		FR_Actinic_Manual_Ctrl = (bool)Get_Setpoint("FR_Actinic_Manual_Ctrl.txt");
 		FR_Actinic_Manual_ON = (bool)Get_Setpoint("FR_Actinic_Manual_ON.txt");
 		FR_Actinic_Period_1 = (bool)Get_Setpoint("FR_Actinic_Period_1.txt");
 		FR_Actinic_Period_2 = (bool)Get_Setpoint("FR_Actinic_Period_2.txt");
-		FR_Actinic_Period_3 = (bool)Get_Setpoint("FR_Actinic_Period_3.txt");
+		//FR_Actinic_Period_3 = (bool)Get_Setpoint("FR_Actinic_Period_3.txt");
 		FR_Actinic_Period_1_ON = (int)Get_Setpoint("FR_Actinic_Period_1_ON.txt");
 		FR_Actinic_Period_2_ON = (int)Get_Setpoint("FR_Actinic_Period_2_ON.txt");
-		FR_Actinic_Period_3_ON = (int)Get_Setpoint("FR_Actinic_Period_3_ON.txt");
+		//FR_Actinic_Period_3_ON = (int)Get_Setpoint("FR_Actinic_Period_3_ON.txt");
 		FR_Actinic_Period_1_OFF = (int)Get_Setpoint("FR_Actinic_Period_1_OFF.txt");
 		FR_Actinic_Period_2_OFF = (int)Get_Setpoint("FR_Actinic_Period_2_OFF.txt");
-		FR_Actinic_Period_3_OFF = (int)Get_Setpoint("FR_Actinic_Period_3_OFF.txt");
+		//FR_Actinic_Period_3_OFF = (int)Get_Setpoint("FR_Actinic_Period_3_OFF.txt");
 		// Environmental control
 		Temp_Ctrl = (bool)Get_Setpoint("Temp_Ctrl.txt");
 		R_Temp_Set = Get_Setpoint("R_Temp_Set.txt");
@@ -468,26 +473,26 @@ void setup() {
 		FR_1_LEDs_PWM_Duty_Cycle = (int)Get_Setpoint("FR_1_LEDs_PWM_Duty_Cycle.txt");
 		FR_1_LEDs_Period_1 = (bool)Get_Setpoint("FR_1_LEDs_Period_1.txt");
 		FR_1_LEDs_Period_2 = (bool)Get_Setpoint("FR_1_LEDs_Period_2.txt");
-		FR_1_LEDs_Period_3 = (bool)Get_Setpoint("FR_1_LEDs_Period_3.txt");
+		//FR_1_LEDs_Period_3 = (bool)Get_Setpoint("FR_1_LEDs_Period_3.txt");
 		FR_1_LEDs_Period_1_ON = (int)Get_Setpoint("FR_1_LEDs_Period_1_ON.txt");
 		FR_1_LEDs_Period_2_ON = (int)Get_Setpoint("FR_1_LEDs_Period_2_ON.txt");
-		FR_1_LEDs_Period_3_ON = (int)Get_Setpoint("FR_1_LEDs_Period_3_ON.txt");
+		//FR_1_LEDs_Period_3_ON = (int)Get_Setpoint("FR_1_LEDs_Period_3_ON.txt");
 		FR_1_LEDs_Period_1_OFF = (int)Get_Setpoint("FR_1_LEDs_Period_1_OFF.txt");
 		FR_1_LEDs_Period_2_OFF = (int)Get_Setpoint("FR_1_LEDs_Period_2_OFF.txt");
-		FR_1_LEDs_Period_3_OFF = (int)Get_Setpoint("FR_1_LEDs_Period_3_OFF.txt");
+		//FR_1_LEDs_Period_3_OFF = (int)Get_Setpoint("FR_1_LEDs_Period_3_OFF.txt");
 		// Far-red LEDs 2
 		FR_2_LEDs_Manual_Ctrl = (bool)Get_Setpoint("FR_2_LEDs_Manual_Ctrl.txt");
 		FR_2_LEDs_Manual_ON = (bool)Get_Setpoint("FR_2_LEDs_Manual_ON.txt");
 		FR_2_LEDs_PWM_Duty_Cycle = (int)Get_Setpoint("FR_2_LEDs_PWM_Duty_Cycle.txt");
 		FR_2_LEDs_Period_1 = (bool)Get_Setpoint("FR_2_LEDs_Period_1.txt");
 		FR_2_LEDs_Period_2 = (bool)Get_Setpoint("FR_2_LEDs_Period_2.txt");
-		FR_2_LEDs_Period_3 = (bool)Get_Setpoint("FR_2_LEDs_Period_3.txt");
+		//FR_2_LEDs_Period_3 = (bool)Get_Setpoint("FR_2_LEDs_Period_3.txt");
 		FR_2_LEDs_Period_1_ON = (int)Get_Setpoint("FR_2_LEDs_Period_1_ON.txt");
 		FR_2_LEDs_Period_2_ON = (int)Get_Setpoint("FR_2_LEDs_Period_2_ON.txt");
-		FR_2_LEDs_Period_3_ON = (int)Get_Setpoint("FR_2_LEDs_Period_3_ON.txt");
+		//FR_2_LEDs_Period_3_ON = (int)Get_Setpoint("FR_2_LEDs_Period_3_ON.txt");
 		FR_2_LEDs_Period_1_OFF = (int)Get_Setpoint("FR_2_LEDs_Period_1_OFF.txt");
 		FR_2_LEDs_Period_2_OFF = (int)Get_Setpoint("FR_2_LEDs_Period_2_OFF.txt");
-		FR_2_LEDs_Period_3_OFF = (int)Get_Setpoint("FR_2_LEDs_Period_3_OFF.txt");
+		//FR_2_LEDs_Period_3_OFF = (int)Get_Setpoint("FR_2_LEDs_Period_3_OFF.txt");
 	}
 	
 
@@ -544,6 +549,7 @@ void setup() {
 				R_Actinic_Period_2 = in;
 			}
 		};
+		/*
 		thing["R_Actinic_Period_3"] << [](pson& in) {
 			if (in.is_empty()) { in = (bool)Get_Setpoint("R_Actinic_Period_3.txt"); }
 			else {
@@ -551,6 +557,7 @@ void setup() {
 				R_Actinic_Period_3 = in;
 			}
 		};
+		*/
 		thing["R_Actinic_Period_1_ON"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_1_ON.txt"); }
 			else {
@@ -565,6 +572,7 @@ void setup() {
 				R_Actinic_Period_2_ON = in;
 			}
 		};
+		/*
 		thing["R_Actinic_Period_3_ON"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_3_ON.txt"); }
 			else {
@@ -572,6 +580,7 @@ void setup() {
 				R_Actinic_Period_3_ON = in;
 			}
 		};
+		*/
 		thing["R_Actinic_Period_1_OFF"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_1_OFF.txt"); }
 			else {
@@ -586,6 +595,7 @@ void setup() {
 				R_Actinic_Period_2_OFF = in;
 			}
 		};
+		/*
 		thing["R_Actinic_Period_3_OFF"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("R_Actinic_Period_3_OFF.txt"); }
 			else {
@@ -593,6 +603,7 @@ void setup() {
 				R_Actinic_Period_3_OFF = in;
 			}
 		};
+		*/
 		// Far-red Actinic Light
 		thing["FR_Actinic_Manual_Ctrl"] << [](pson& in) {
 			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_Actinic_Manual_Ctrl.txt"); }
@@ -622,6 +633,7 @@ void setup() {
 				FR_Actinic_Period_2 = in;
 			}
 		};
+		/*
 		thing["FR_Actinic_Period_3"] << [](pson& in) {
 			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_Actinic_Period_3.txt"); }
 			else {
@@ -629,6 +641,7 @@ void setup() {
 				FR_Actinic_Period_3 = in;
 			}
 		};
+		*/
 		thing["FR_Actinic_Period_1_ON"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_1_ON.txt"); }
 			else {
@@ -643,6 +656,7 @@ void setup() {
 				FR_Actinic_Period_2_ON = in;
 			}
 		};
+		/*
 		thing["FR_Actinic_Period_3_ON"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_3_ON.txt"); }
 			else {
@@ -650,6 +664,7 @@ void setup() {
 				FR_Actinic_Period_3_ON = in;
 			}
 		};
+		*/
 		thing["FR_Actinic_Period_1_OFF"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_1_OFF.txt"); }
 			else {
@@ -664,6 +679,7 @@ void setup() {
 				FR_Actinic_Period_2_OFF = in;
 			}
 		};
+		/*
 		thing["FR_Actinic_Period_3_OFF"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_Actinic_Period_3_OFF.txt"); }
 			else {
@@ -671,6 +687,7 @@ void setup() {
 				FR_Actinic_Period_3_OFF = in;
 			}
 		};
+		*/
 		// Environmental control
 		thing["Temp_Ctrl"] << [](pson& in) {
 			if (in.is_empty()) { in = (bool)Get_Setpoint("Temp_Ctrl.txt"); }
@@ -752,6 +769,7 @@ void setup() {
 				FR_1_LEDs_Period_2 = in;
 			}
 		};
+		/*
 		thing["FR_1_LEDs_Period_3"] << [](pson& in) {
 			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_1_LEDs_Period_3.txt"); }
 			else {
@@ -759,6 +777,7 @@ void setup() {
 				FR_1_LEDs_Period_3 = in;
 			}
 		};
+		*/
 		thing["FR_1_LEDs_Period_1_ON"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_1_ON.txt"); }
 			else {
@@ -773,6 +792,7 @@ void setup() {
 				FR_1_LEDs_Period_2_ON = in;
 			}
 		};
+		/*
 		thing["FR_1_LEDs_Period_3_ON"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_3_ON.txt"); }
 			else {
@@ -780,6 +800,7 @@ void setup() {
 				FR_1_LEDs_Period_3_ON = in;
 			}
 		};
+		*/
 		thing["FR_1_LEDs_Period_1_OFF"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_1_OFF.txt"); }
 			else {
@@ -794,6 +815,7 @@ void setup() {
 				FR_1_LEDs_Period_2_OFF = in;
 			}
 		};
+		/*
 		thing["FR_1_LEDs_Period_3_OFF"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_1_LEDs_Period_3_OFF.txt"); }
 			else {
@@ -801,6 +823,7 @@ void setup() {
 				FR_1_LEDs_Period_3_OFF = in;
 			}
 		};
+		*/
 		// Far-red LEDs 2
 		thing["FR_2_LEDs_Manual_Ctrl"] << [](pson& in) {
 			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_2_LEDs_Manual_Ctrl.txt"); }
@@ -837,6 +860,7 @@ void setup() {
 				FR_2_LEDs_Period_2 = in;
 			}
 		};
+		/*
 		thing["FR_2_LEDs_Period_3"] << [](pson& in) {
 			if (in.is_empty()) { in = (bool)Get_Setpoint("FR_2_LEDs_Period_3.txt"); }
 			else {
@@ -844,6 +868,7 @@ void setup() {
 				FR_2_LEDs_Period_3 = in;
 			}
 		};
+		*/
 		thing["FR_2_LEDs_Period_1_ON"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_1_ON.txt"); }
 			else {
@@ -858,6 +883,7 @@ void setup() {
 				FR_2_LEDs_Period_2_ON = in;
 			}
 		};
+		/*
 		thing["FR_2_LEDs_Period_3_ON"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_3_ON.txt"); }
 			else {
@@ -865,6 +891,7 @@ void setup() {
 				FR_2_LEDs_Period_3_ON = in;
 			}
 		};
+		*/
 		thing["FR_2_LEDs_Period_1_OFF"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_1_OFF.txt"); }
 			else {
@@ -879,6 +906,7 @@ void setup() {
 				FR_2_LEDs_Period_2_OFF = in;
 			}
 		};
+		/*
 		thing["FR_2_LEDs_Period_3_OFF"] << [](pson& in) {
 			if (in.is_empty()) { in = (int)Get_Setpoint("FR_2_LEDs_Period_3_OFF.txt"); }
 			else {
@@ -886,6 +914,7 @@ void setup() {
 				FR_2_LEDs_Period_3_OFF = in;
 			}
 		};
+		*/
 	}
 
 
@@ -995,10 +1024,10 @@ void setup() {
 	////// Start PIDs
 	windowStartTime = local_t;
 	// Set a minimum ON Fan time of 150 seconds
-	R_Temp_PID.SetOutputLimits(150, WindowSize);
-	FR_Temp_PID.SetOutputLimits(150, WindowSize);
-	R_RH_PID.SetOutputLimits(150, WindowSize);
-	FR_RH_PID.SetOutputLimits(150, WindowSize);
+	R_Temp_PID.SetOutputLimits(0, WindowSize);
+	FR_Temp_PID.SetOutputLimits(0, WindowSize);
+	R_RH_PID.SetOutputLimits(0, WindowSize);
+	FR_RH_PID.SetOutputLimits(0, WindowSize);
 	// Turn PID ON
 	R_Temp_PID.SetMode(AUTOMATIC);
 	R_RH_PID.SetMode(AUTOMATIC);
@@ -1150,11 +1179,11 @@ void loop() {
 		if (Temp_Ctrl) { R_Temp_PID.Compute(); }
 		else { R_RH_PID.Compute(); }
 		// Execute PID output for Red chamber
-		if (local_t - windowStartTime < R_Fan_ON_t) {
+		if (!R_Fan_ON && local_t - windowStartTime <= R_Fan_ON_t && R_Fan_ON_t >= MinOnTime) {
 			digitalWrite(R_Chamber_Fan_PIN, HIGH);
 			R_Fan_ON = true;
 		}
-		else {
+		else if (R_Fan_ON && local_t - windowStartTime >= R_Fan_ON_t + MinOffTime) {
 			digitalWrite(R_Chamber_Fan_PIN, LOW);
 			R_Fan_ON = false;
 		}
@@ -1169,11 +1198,11 @@ void loop() {
 		if (Temp_Ctrl) { FR_Temp_PID.Compute(); }
 		else { FR_RH_PID.Compute(); }
 		// Execute PID output for Farred chamber
-		if (local_t - windowStartTime < FR_Fan_ON_t) {
+		if (!FR_Fan_ON && local_t - windowStartTime <= FR_Fan_ON_t && FR_Fan_ON_t >= MinOnTime) {
 			digitalWrite(FR_Chamber_Fan_PIN, HIGH);
 			FR_Fan_ON = true;
 		}
-		else {
+		else if (FR_Fan_ON && local_t - windowStartTime >= FR_Fan_ON_t + MinOffTime) {
 			digitalWrite(FR_Chamber_Fan_PIN, LOW);
 			FR_Fan_ON = false;
 		}
@@ -1189,9 +1218,11 @@ void loop() {
 		if (R_Actinic_Period_1) { Period_1 = SetLights(R_Actinic_Period_1_ON, R_Actinic_Period_1_OFF); }
 		bool Period_2 = false;
 		if (R_Actinic_Period_2) { Period_2 = SetLights(R_Actinic_Period_2_ON, R_Actinic_Period_2_OFF); }
+		/*
 		bool Period_3 = false;
 		if (R_Actinic_Period_3) { Period_3 = SetLights(R_Actinic_Period_3_ON, R_Actinic_Period_3_OFF); }
-		if (Period_1 || Period_2 || Period_3) {
+		*/
+		if (Period_1 || Period_2 /*|| Period_3*/) {
 			R_Actinic_ON = true;
 		}
 		else {
@@ -1207,9 +1238,11 @@ void loop() {
 		if (FR_Actinic_Period_1) { Period_1 = SetLights(FR_Actinic_Period_1_ON, FR_Actinic_Period_1_OFF); }
 		bool Period_2 = false;
 		if (FR_Actinic_Period_2) { Period_2 = SetLights(FR_Actinic_Period_2_ON, FR_Actinic_Period_2_OFF); }
+		/*
 		bool Period_3 = false;
 		if (FR_Actinic_Period_3) { Period_3 = SetLights(FR_Actinic_Period_3_ON, FR_Actinic_Period_3_OFF); }
-		if (Period_1 || Period_2 || Period_3) {
+		*/
+		if (Period_1 || Period_2 /*|| Period_3*/) {
 			FR_Actinic_ON = true;
 		}
 		else {
@@ -1225,9 +1258,11 @@ void loop() {
 		if (FR_1_LEDs_Period_1) { Period_1 = SetLights(FR_1_LEDs_Period_1_ON, FR_1_LEDs_Period_1_OFF); }
 		bool Period_2 = false;
 		if (FR_1_LEDs_Period_2) { Period_2 = SetLights(FR_1_LEDs_Period_2_ON, FR_1_LEDs_Period_2_OFF); }
+		/*
 		bool Period_3 = false;
 		if (FR_1_LEDs_Period_3) { Period_3 = SetLights(FR_1_LEDs_Period_3_ON, FR_1_LEDs_Period_3_OFF); }
-		if (Period_1 || Period_2 || Period_3) {
+		*/
+		if (Period_1 || Period_2 /*|| Period_3*/) {
 			FR_1_LEDs_ON = true;
 		}
 		else {
@@ -1245,9 +1280,11 @@ void loop() {
 		if (FR_2_LEDs_Period_1) { Period_1 = SetLights(FR_2_LEDs_Period_1_ON, FR_2_LEDs_Period_1_OFF); }
 		bool Period_2 = false;
 		if (FR_2_LEDs_Period_2) { Period_2 = SetLights(FR_2_LEDs_Period_2_ON, FR_2_LEDs_Period_2_OFF); }
+		/*
 		bool Period_3 = false;
 		if (FR_2_LEDs_Period_3) { Period_3 = SetLights(FR_2_LEDs_Period_3_ON, FR_2_LEDs_Period_3_OFF); }
-		if (Period_1 || Period_2 || Period_3) {
+		*/
+		if (Period_1 || Period_2 /*|| Period_3*/) {
 			FR_2_LEDs_ON = true;
 		}
 		else {

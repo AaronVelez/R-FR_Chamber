@@ -254,10 +254,6 @@ void setup() {
             WiFi.disconnect();  // if no internet, disconnect. This prevents the board to be busy only trying to connect.
         }
     }
-    M5.Lcd.println(F("Setting Speaker..."));
-    //M5.Speaker.setBeep(900, 100);
-    //M5.Speaker.setVolume(255);
-    //M5.Speaker.update();
 
 
         ////// Initialize SD card
@@ -620,8 +616,9 @@ void loop() {
                     LogFile.println(str);
                     LogFile.close();
                 }
-                PayloadRdy = false;
+                PayloadRdy = false;		// Payload in cloud, str String destroyed in the process
             }
+            PayloadRdy = false;		// Payload upload NOT succesful, yet str String destroyed in the process. Need to look for payload in SD card again
         }
     }
 
@@ -666,7 +663,7 @@ void loop() {
         M5.Lcd.setFreeFont(&FreeSans15pt7b);
         M5.Lcd.setTextDatum(TL_DATUM);
         M5.Lcd.drawString(F("Red"), 10 + 160, 10 + 100);
-        M5.Lcd.drawString(F("Chamber"), 10 + 160, 10 + 100 + 25);
+        M5.Lcd.drawString(F("Chamber"), 10 + 160, 10 + 100 + 50);
 
         // Date and time
         M5.Lcd.fillRect(0, 200, 320, 240, M5.Lcd.color565(0, 0, 0));
