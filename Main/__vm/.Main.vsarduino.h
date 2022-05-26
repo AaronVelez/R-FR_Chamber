@@ -6,7 +6,7 @@
 			All non-arduino files created by visual micro and all visual studio project or solution files can be freely deleted and are not required to compile a sketch (do not delete your own code!).
 			Note: debugger breakpoints are stored in '.sln' or '.asln' files, knowledge of last uploaded breakpoints is stored in the upload.vmps.xml file. Both files are required to continue a previous debug session without needing to compile and upload again
 	
-	Hardware: Adafruit Feather M0 (SAMD21), Platform=samd, Package=adafruit
+	Hardware: Adafruit Feather M4 Express (SAMD51), Platform=samd, Package=adafruit
 */
 
 #if defined(_VMICRO_INTELLISENSE)
@@ -14,20 +14,24 @@
 #ifndef _VSARDUINO_H_
 #define _VSARDUINO_H_
 #define _VMDEBUG 1
-#define F_CPU 48000000L
+#define F_CPU 120000000L
 #define ARDUINO 108013
-#define ARDUINO_SAMD_ZERO
+#define ARDUINO_FEATHER_M4
 #define ARDUINO_ARCH_SAMD
 #define ARDUINO_SAMD_ADAFRUIT
-#define __SAMD21G18A__
-#define ADAFRUIT_FEATHER_M0
-#define ARM_MATH_CM0PLUS
+#define __SAMD51J19A__
+#define ADAFRUIT_FEATHER_M4_EXPRESS
+#define __SAMD51__
+#define __FPU_PRESENT
+#define ARM_MATH_CM4
 #define USB_VID 0x239A
-#define USB_PID 0x800B
+#define USB_PID 0x8022
 #define USBCON
 #define USB_CONFIG_POWER 100
+#define ENABLE_CACHE
+#define VARIANT_QSPI_BAUD_DEFAULT 50000000
 #define USB_VID 0x239A
-#define USB_PID 0x800B
+#define USB_PID 0x8022
 #define USB_CONFIG_POWER 100
 #define __cplusplus 201103L
 //#define __GNUC__ 2
