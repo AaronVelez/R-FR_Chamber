@@ -15,16 +15,16 @@
 ////// Pins 11, 12 and 13 are used for WiFi feather wing !!!
 
 const int SD_CS_PIN = 10;				// SD on Addlogger M0 Feather 
-const int R_Chamber_Actinic_PIN = 14;		// Power Actinic Lamp in Red chamber. Level shifter channel 1.
-const int FR_Chamber_Actinic_PIN = 15;		// Power Actinic Lamp in Farred chamber.  Level shifter channel 2.
-//const int I2C_Select_0_PIN = 9;			// I2C multiplexer digital select line
-const int FR_1_LEDs_PIN = 16;			// Power Farred LEDs, circuit 1.  Level shifter channel 3.
-const int FR_2_LEDs_PIN = 17;			// Power Farred LEDs, circuit 2.  Level shifter channel 4.
-const int R_Chamber_Fan_PIN = 18;		// Power Fan in Red Chamber.  Level shifter channel 5.
-const int FR_Chamber_Fan_PIN = 19;		// Power Fan in Farred Chamber.  Level shifter channel 6.
-const int FR_1_LEDs_PWM_PIN = 5;		// PWM  line to dim FarRed LEDs, circuit 1.  Level shifter channel 7.
-const int FR_2_LEDs_PWM_PIN = 6;		// PWM  line to dim FarRed LEDs, circuit 2.  Level shifter channel 8.
-const int StatusLED = 4					
+const int R_Chamber_Actinic_PIN = 14;	// Power Actinic Lamp in Red chamber
+const int FR_Chamber_Actinic_PIN = 15;	// Power Actinic Lamp in Farred chamber
+const int FR_1_LEDs_PIN = 16;			// Power Farred LEDs, circuit 1
+const int FR_2_LEDs_PIN = 17;			// Power Farred LEDs, circuit 2
+const int R_Chamber_Fan_PIN = 18;		// Power Fan in Red Chamber
+const int FR_Chamber_Fan_PIN = 19;		// Power Fan in Farred Chamber
+const int FR_1_LEDs_PWM_PIN = 5;		// PWM line to dim FarRed LEDs, circuit 1
+const int FR_2_LEDs_PWM_PIN = 6;		// PWM line to dim FarRed LEDs, circuit 2
+const int Battery_PIN = A6;				// Non-exposed pin connected to battery with a 100k voltage divider
+const int Status_LED_PIN = 4;			// To tutn ON/OFF a status LED 
 
 
 
@@ -140,6 +140,7 @@ const char* FileName[] = { "2020.txt", "2021.txt", "2022.txt", "2023.txt", "2024
 			"2090.txt", "2091.txt", "2092.txt", "2093.txt", "2094.txt", "2095.txt", "2096.txt", "2097.txt", "2098.txt", "2099.txt",
 			"2100.txt" };
 const String Headers = F("UTC_UNIX_t\tLocal_UNIX_t\tyear\tmonth\tday\thour\tminute\tsecond\t\
+BatVolt\t\
 R_Actinic_ON\tFR_Actinic_ON\t\
 R_Fan_ON\tFR_Fan_ON\t\
 FR_1_LEDs_ON\tFR_2_LEDs_ON\t\
@@ -148,11 +149,11 @@ R_Actinic_Manual_Ctrl\tFR_Actinic_Manual_Ctrl\t\
 FR_1_LEDs_Manual_Ctrl\tFR_2_LEDs_Manual_Ctrl\t\
 R_Fan_Manual_Ctrl\tFR_Fan_Manual_Ctrl\t\
 SentIoT");
-const int HeaderN = 23;	// cero indexed
+const int HeaderN = 24;	// cero indexed
 String LogString = "";
 
 
-////// M0 ADC constants
+////// M4 ADC constants
 const int n = 100; // measure n times the ADC input for averaging
 double sum = 0; // shift register to hold ADC data
 
@@ -188,7 +189,11 @@ time_t t_WiFiCnxTry = 0;      // Last time a (re)connection to internet happened
 const int WiFiCnx_frq = 150;  // (re)connection to internet frequency in seconds
 
 time_t t_DataBucket = 0;             // Last time Data was sent to bucket (in UNIX time format) 
-const int DataBucket_frq = 150;       // Data bucket update frequency in seconds (must be more than 60)
+const int DataBucket_frq = 150;      // Data bucket update frequency in seconds (must be more than 60)
+
+time_t Last_LED_Blink = 0;			// Last time the status LED changed state
+const int LED_Blink_frq = 1000;		// Satus LED blink interval in ms
+int LED_State = LOW;					// Status LED state
 
 
 ////// Lamps, LEDs and Fan control variables
@@ -253,18 +258,16 @@ bool FR_Fan_ON = false;
 
 
 ////// Measured instantaneous variables
-double IoT_Temp_R = -1;        // Air temperature RED chamber
-double IoT_RH_R = -1;          // Air RH value RED chamber
-double IoT_Temp_FR = -1;        // Air temperature FARRED chamber 
-double IoT_RH_FR = -1;          // Air RH value FARRED chamber
-bool AC_OK = true;			// Monitor AC power supply OK
-double USBVolt = 0;			// USB voltage
+double IoT_Temp_R = -1;     // Air temperature RED chamber
+double IoT_RH_R = -1;       // Air RH value RED chamber
+double IoT_Temp_FR = -1;    // Air temperature FARRED chamber 
+double IoT_RH_FR = -1;      // Air RH value FARRED chamber
+double BatVolt = 0;			// Battery voltage
 
 
 ////// Variables to store sum for eventual averaging
 //Environmental
-int AC_OK_Sum = 0;
-double USBVolt_Sum = 0;
+double BatVolt_Sum = 0;
 // Actinic lamps
 int R_Actinic_Manual_Ctrl_Sum = 0;
 int R_Actinic_ON_Sum = 0;
@@ -285,6 +288,8 @@ int FR_Fan_ON_Sum = 0;
 
 
 ////// Values to be logged. They will be the average over the last 5 minutes
+// //Environmental
+double BatVolt_Avg = 0;
 // Actinic lamps
 double R_Actinic_Manual_Ctrl_Avg = 0;
 double R_Actinic_ON_Avg = 0;
@@ -369,9 +374,6 @@ void setup() {
 	digitalWrite(R_Chamber_Actinic_PIN, LOW);
 	pinMode(FR_Chamber_Actinic_PIN, OUTPUT);
 	digitalWrite(FR_Chamber_Actinic_PIN, LOW);
-	//I2C multiplexer
-	pinMode(I2C_Select_0_PIN, OUTPUT);
-	digitalWrite(I2C_Select_0_PIN, LOW);
 	// Farred LEDs
 	pinMode(FR_1_LEDs_PIN, OUTPUT);
 	digitalWrite(FR_1_LEDs_PIN, LOW);
@@ -386,6 +388,9 @@ void setup() {
 	digitalWrite(R_Chamber_Fan_PIN, LOW);
 	pinMode(FR_Chamber_Fan_PIN, OUTPUT);
 	digitalWrite(FR_Chamber_Fan_PIN, LOW);
+	// Status LED
+	pinMode(Status_LED_PIN, OUTPUT);
+	digitalWrite(Status_LED_PIN, HIGH);
 
 
 	////// Initialize SD card
@@ -401,6 +406,10 @@ void setup() {
 	// (prevents heap RAM framgentation)
 	LogString.reserve(HeaderN * 7);
 	str.reserve(HeaderN * 7);
+
+
+	// Set ADC resolution
+	analogReadResolution(12);
 
 
 	////// Load Control variables from SD card
@@ -774,6 +783,7 @@ void setup() {
 	thing["RT_FR_2_LEDs_ON"] >> [](pson& out) { out = FR_2_LEDs_ON; };
 	thing["RT_R_Fan_ON "] >> [](pson& out) { out = R_Fan_ON; };
 	thing["RT_FR_Fan_ON "] >> [](pson& out) { out = FR_Fan_ON; };
+	thing["RT_Battery_Voltage"] >> [](pson& out) { out = BatVolt; };
 	
 	thing["Avg_Data"] >> [](pson& out) {
 		out["Time_Stamp"] = SD_local_t;
@@ -791,6 +801,7 @@ void setup() {
 		out["Red_Chamber_Fan_ON"] = R_Fan_ON_Avg;
 		out["FarRed_Chamber_Fan_Manual_Ctrl"] = FR_Fan_Manual_Ctrl_Avg;
 		out["FarRed_Chamber_Fan_ON"] = FR_Fan_ON_Avg;
+		out["Battery_Voltage"] = BatVolt_Avg;
 	};
 
 
@@ -880,13 +891,27 @@ void loop() {
 
 
 	////// State 4. Test if it is time to read Temp, RH values
-	// 	   ADN test if AC current is OK
+	// 	   ADN read battery voltage
 	////// AND record sensor values for 5-minute averages (each 20 seconds)
 	if ((s % 20 == 0) && (s != LastSum)) {
 		if (debug) { Serial.println(F("Time to read sensors")); }
 
-		// Debug Temp and RH IoT values
+		// Read Battery voltage
+		sum = 0;
+		for (int i = 0; i <= n; i++) {
+			sum += analogRead(Battery_PIN);
+		}
+		BatVolt = sum / n;	// Get average reading
+		BatVolt *= 2;		// Revert voltage divider effect on reading
+		BatVolt *= 3.3;		// Multipl by ADC reference voltage
+		BatVolt /= 4096;	// Convert to volts using 12 bit resolution
+		BatVolt *= 1000;	// Convert to mV
+
+		// Debug local and IoT values
 		if (debug) {
+			Serial.print(F("Battery voltage (mV): "));
+			Serial.println(BatVolt, 2);
+
 			Serial.print(F("Red IoT Temp: "));
 			Serial.println(IoT_Temp_R, 2);
 			Serial.print(F("Red IoT RH: "));
@@ -897,9 +922,10 @@ void loop() {
 			Serial.print(F("Far-Red IoT RH: "));
 			Serial.println(IoT_RH_FR, 2);
 		}
-
 		
 		// Add new values to sum
+		// Environment
+		BatVolt_Sum += BatVolt;
 		// Actinic
 		R_Actinic_Manual_Ctrl_Sum += (int)R_Actinic_Manual_Ctrl;
 		R_Actinic_ON_Sum += (int)R_Actinic_ON;
@@ -1052,6 +1078,8 @@ void loop() {
 	if (((m % 5) == 0) && (m != LastLog) && (SumNum > 0)) {
 		if (debug) { Serial.println(F("Time to calculate averages and log to SD card")); }
 		// Calculate averages
+		// Environment
+		BatVolt_Avg = BatVolt_Sum / SumNum;
 		// Actinic
 		R_Actinic_Manual_Ctrl_Avg = R_Actinic_Manual_Ctrl_Sum / SumNum;
 		R_Actinic_ON_Avg = R_Actinic_ON_Sum / SumNum;
@@ -1104,6 +1132,7 @@ void loop() {
 
 		// Log to SD card
 		LogString = (String)(unsigned long)UTC_t + "\t" + (unsigned long)local_t + "\t" + yr + "\t" + mo + "\t" + dy + "\t" + h + "\t" + m + "\t" + s + "\t" +
+			String(BatVolt_Avg, 2) + "\t" +
 			String(R_Actinic_ON_Avg, 2) + "\t" + String(FR_Actinic_ON_Avg, 2) + "\t" +
 			String(R_Fan_ON_Avg, 2) + "\t" + String(FR_Fan_ON_Avg, 2) + "\t" +
 			String(FR_1_LEDs_ON_Avg, 2) + "\t" + String(FR_2_LEDs_ON_Avg, 2) + "\t" +
@@ -1118,6 +1147,8 @@ void loop() {
 
 		// Reset Shift Registers
 		LastLog = m;
+
+		BatVolt_Sum = 0;
 
 		R_Actinic_Manual_Ctrl_Sum = 0;
 		R_Actinic_ON_Sum = 0;
@@ -1246,54 +1277,49 @@ void loop() {
 					else if (i == 6) {
 						mIoT = buffer.toInt();
 					}
-					/*
-					else if (i == 8) {	// AC_OK
-						AC_OK_Avg = buffer.toFloat();
+					else if (i == 8) {	// Battery voltage
+						BatVolt_Avg = buffer.toFloat();
 					}
-					else if (i == 9) {	// Battery voltage
-						USBVolt_Avg = buffer.toFloat();
-					}
-					*/
-					else if (i == 8) { // Red chamber Actinic lamp ON?
+					else if (i == 9) { // Red chamber Actinic lamp ON?
 						R_Actinic_ON_Avg = buffer.toInt();
 					}
-					else if (i == 9) { // Farred chamber Actinic lamp ON?
+					else if (i == 10) { // Farred chamber Actinic lamp ON?
 						FR_Actinic_ON_Avg = buffer.toInt();
 					}
-					else if (i == 10) { // Red chamber Fan ON?
+					else if (i == 11) { // Red chamber Fan ON?
 						R_Fan_ON_Avg = buffer.toInt();
 					}
-					else if (i == 11) { // Farred chamber Fan ON?
+					else if (i == 12) { // Farred chamber Fan ON?
 						FR_Fan_ON_Avg = buffer.toInt();
 					}
-					else if (i == 12) { // FR LEDs 1 ON?
+					else if (i == 13) { // FR LEDs 1 ON?
 						FR_1_LEDs_ON_Avg = buffer.toInt();
 					}
-					else if (i == 13) { // FR LEDs 2 ON?
+					else if (i == 14) { // FR LEDs 2 ON?
 						FR_2_LEDs_ON_Avg = buffer.toInt();
 					}
-					else if (i == 14) { // FR LEDs 1 PWM
+					else if (i == 15) { // FR LEDs 1 PWM
 						FR_1_LEDs_PWM_Duty_Cycle_Avg = buffer.toInt();
 					}
-					else if (i == 15) { // FR LEDs 2 PWM
+					else if (i == 16) { // FR LEDs 2 PWM
 						FR_2_LEDs_PWM_Duty_Cycle_Avg = buffer.toInt();
 					}
-					else if (i == 16) { // Manual Actinic Ctrl in red chamber
+					else if (i == 17) { // Manual Actinic Ctrl in red chamber
 						R_Actinic_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 17) { // Manual Actinic Ctrl in farred chamber
+					else if (i == 18) { // Manual Actinic Ctrl in farred chamber
 						FR_Actinic_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 18) { // Manual LEDs 1 Ctrl in red chamber
+					else if (i == 19) { // Manual LEDs 1 Ctrl in red chamber
 						FR_1_LEDs_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 19) { // Manual LEDs 1 Ctrl in farred chamber
+					else if (i == 20) { // Manual LEDs 1 Ctrl in farred chamber
 						FR_2_LEDs_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 20) { // Manual Fan Ctrl in red chamber
+					else if (i == 21) { // Manual Fan Ctrl in red chamber
 						R_Fan_Manual_Ctrl_Avg = buffer.toInt();
 					}
-					else if (i == 21) { // Manual Fan Ctrl in farred chamber
+					else if (i == 22) { // Manual Fan Ctrl in farred chamber
 						FR_Fan_Manual_Ctrl_Avg = buffer.toInt();
 					}
 				}
@@ -1343,11 +1369,21 @@ void loop() {
 	}
 
 
+	////// State 10. Blink LED
+	if (UTC_t - Last_LED_Blink > LED_Blink_frq) {
+		// Time to blink
+		if (LED_State == LOW) { LED_State = HIGH; }
+		else { LED_State = LOW; }
+		digitalWrite(Status_LED_PIN, LED_State);
+		// Update Blink time
+		Last_LED_Blink = UTC_t;
+	}
+		
+
 
 	if (debug) {
 		printWifiStatus();
 	}
-
 }
 
 
