@@ -75,7 +75,7 @@ WiFiUDP ntpUDP;
 ThingerWiFiNINA thing(iot_user, iot_device, iot_credential);
 /// <summary>
 /// IMPORTANT
-/// in file \thinger.io\src\ThingerClient.h at Line 355, the function handle_connection() was modified
+/// in file \thinger.io\src\ThingerClient.h around Line 426, the function handle_connection() was modified
 /// to prevent the thinger handler to agresively try to reconnect to WiFi in case of a lost connection
 /// This allows the device to keep monitoring environmental variables even if there is no network connection
 /// </summary>
@@ -121,11 +121,16 @@ Timezone mxCT(mxCDT, mxCST);
 
 
 ////// Station IDs & Constants
-const int StaNum = 7;
-String StaType = F("M0_WiFiNA_RTC-PCF8523_Thinger");
-String StaName = F("R-FR Chamber LANGEBIO");
+const int Station_Number = 7;
+String Processor = F("ARM M4");
+String IoT_Hardware = F("AirLift ESP32 WiFi");
+String IoT_Software = F("Thinger WiFiNa");
+String RTC_Hardware = F("PCF8523");
+String IoT_Asset_Type = F("Environment_Monitor");
+String IoT_Group = F("LANGEBIO");
+String IoT_Station_Name = F("R-FR Chamber LANGEBIO");
 String Firmware = F("v1.0.0");
-//const double VRef = 3.3;
+
 bool debug = true;
 
 
@@ -191,8 +196,9 @@ const int WiFiCnx_frq = 150;  // (re)connection to internet frequency in seconds
 time_t t_DataBucket = 0;             // Last time Data was sent to bucket (in UNIX time format) 
 const int DataBucket_frq = 150;      // Data bucket update frequency in seconds (must be more than 60)
 
-time_t Last_LED_Blink = 0;			// Last time the status LED changed state
-const int LED_Blink_frq = 1000;		// Satus LED blink interval in ms
+unsigned long Current_LED_Blink = 0;	// Current mills
+unsigned long Last_LED_Blink = 0;		// Last time the status LED changed state in ms
+const int LED_Blink_frq = 1000;			// Satus LED blink interval in ms
 int LED_State = LOW;					// Status LED state
 
 
@@ -616,21 +622,12 @@ void setup() {
 			}
 		};
 		thing["FR_Temp_Set"] << [](pson& in) {
-			if (in.is_empty()) { FR_Temp_Set = IoT_Temp_R; }
-			else {
-				FR_Temp_Set = IoT_Temp_R;
-			}
-		};
-		/*
-		thing["FR_Temp_Set"] << [](pson& in) {
 			if (in.is_empty()) { in = Get_Setpoint("FR_Temp_Set.txt"); }
 			else {
 				Set_Setpoint("FR_Temp_Set.txt", (float)in);
 				FR_Temp_Set = in;
 			}
 		};
-		*/
-
 		thing["R_RH_Set"] << [](pson& in) {
 			if (in.is_empty()) { in = Get_Setpoint("R_RH_Set.txt"); }
 			else {
@@ -643,6 +640,34 @@ void setup() {
 			else {
 				Set_Setpoint("FR_RH_Set.txt", (float)in);
 				FR_RH_Set = in;
+			}
+		};
+		thing["R_Fan_Manual_Ctrl"] << [](pson& in) {
+			if (in.is_empty()) { in = Get_Setpoint("R_Fan_Manual_Ctrl.txt"); }
+			else {
+				Set_Setpoint("R_Fan_Manual_Ctrl.txt", (float)in);
+				R_Fan_Manual_Ctrl = in;
+			}
+		};
+		thing["R_Fan_Manual_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = Get_Setpoint("R_Fan_Manual_ON.txt"); }
+			else {
+				Set_Setpoint("R_Fan_Manual_ON.txt", (float)in);
+				R_Fan_Manual_ON = in;
+			}
+		};
+		thing["FR_Fan_Manual_Ctrl"] << [](pson& in) {
+			if (in.is_empty()) { in = Get_Setpoint("FR_Fan_Manual_Ctrl.txt"); }
+			else {
+				Set_Setpoint("FR_Fan_Manual_Ctrl.txt", (float)in);
+				FR_Fan_Manual_Ctrl = in;
+			}
+		};
+		thing["FR_Fan_Manual_ON"] << [](pson& in) {
+			if (in.is_empty()) { in = Get_Setpoint("FR_Fan_Manual_ON.txt"); }
+			else {
+				Set_Setpoint("FR_Fan_Manual_ON.txt", (float)in);
+				FR_Fan_Manual_ON = in;
 			}
 		};
 		// Far-red LEDs 1
@@ -1108,11 +1133,15 @@ void loop() {
 			// Tabs added to prevent line ending with 0. Line ending with 0 indicates that line needs to be sent to IoT.
 			LogFile.println(F("\t\t\t"));
 			LogFile.println(F("Metadata:"));
-			LogFile.println((String)"Station Number\t" + StaNum + "\t\t\t");
-			LogFile.println((String)"Station Name\t" + StaName + "\t\t\t");
-			LogFile.println((String)"Station Type\t" + StaType + "\t\t\t");
+			LogFile.println((String)"Station Number\t" + Station_Number + "\t\t\t");
+			LogFile.println((String)"Station Name\t" + IoT_Station_Name + "\t\t\t");
+			LogFile.println((String)"Station Asset Type\t" + IoT_Asset_Type + "\t\t\t");
+			LogFile.println((String)"Station Group\t" + IoT_Group + "\t\t\t");
+			LogFile.println((String)"Processor\t" + Processor + "\t\t\t");
+			LogFile.println((String)"IoT Hardware\t" + IoT_Hardware + "\t\t\t");
+			LogFile.println((String)"IoT Software\t" + IoT_Software + "\t\t\t");
+			LogFile.println((String)"RTC Hardware\t" + RTC_Hardware + "\t\t\t");
 			LogFile.println((String)"Firmware\t" + Firmware + "\t\t\t");
-			LogFile.println((String)"Log file creation local UNIX time:\t" + (unsigned long)local_t + "\t\t\t");
 			LogFile.println(F("\t\t\t"));
 			LogFile.println(F("\t\t\t"));
 			LogFile.println(F("\t\t\t"));
@@ -1370,13 +1399,14 @@ void loop() {
 
 
 	////// State 10. Blink LED
-	if (UTC_t - Last_LED_Blink > LED_Blink_frq) {
+	Current_LED_Blink = millis();
+	if (Current_LED_Blink - Last_LED_Blink >= LED_Blink_frq) {
 		// Time to blink
 		if (LED_State == LOW) { LED_State = HIGH; }
 		else { LED_State = LOW; }
 		digitalWrite(Status_LED_PIN, LED_State);
 		// Update Blink time
-		Last_LED_Blink = UTC_t;
+		Last_LED_Blink = Current_LED_Blink;
 	}
 		
 

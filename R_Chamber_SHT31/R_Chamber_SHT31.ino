@@ -60,7 +60,7 @@ WiFiUDP ntpUDP;
 ThingerESP32 thing(iot_user, iot_device, iot_credential);
 /// <summary>
 /// IMPORTANT
-/// in file \thinger.io\src\ThingerClient.h at Line 355, the function handle_connection() was modified
+/// in file \thinger.io\src\ThingerClient.h around Line 426, the function handle_connection() was modified
 /// to prevent the thinger handler to agresively try to reconnect to WiFi in case of a lost connection
 /// This allows the alarn to keep monitoring gas levels even if there is no network connection
 /// </summary>
@@ -89,15 +89,6 @@ unsigned int position = 0;
 ////// Time libraries
 RTC_TimeTypeDef RTCtime;
 RTC_DateTypeDef RTCDate;
-
-
-
-
-
-
-
-
-
 
 
 #include <TimeLib.h>
@@ -149,9 +140,10 @@ const char* FileName[] = { "2020.txt", "2021.txt", "2022.txt", "2023.txt", "2024
             "2100.txt" };
 const String Headers = F("UTC_UNIX_t\tLocal_UNIX_t\tyear\tmonth\tday\thour\tminute\tsecond\t\
 AirTemp\tAirRH\t\
+USBVolt\tBatVolt\t\
 SensorsOK\t\
 SentIoT");
-const int HeaderN = 12;	// Number of items in header (columns), Also used as a cero-indexed header index
+const int HeaderN = 13;	// Number of items in header (columns), Also used as a cero-indexed header index
 String LogString = "";
 
 
@@ -197,21 +189,22 @@ const int DataBucket_frq = 150;       // Data bucket update frequency in seconds
 ////// Measured instantaneous variables
 float Temp = -1;        // Air temperature read each minute
 float RH = -1;          // Air RH value read each minute
+float USBVolt = 0;		// USB voltage (VBUS in AXP192)
+float BatVolt = 0;		// Battery voltage
 
 
 ////// Variables to store sum for eventual averaging
 float TempSum = 0;
 float RHSum = 0;
+float USBVoltSum = 0;
+float BatVoltSum = 0;
 
 
 ////// Values to be logged. They will be the average over the last 5 minutes
 float TempAvg = 0;
 float RHAvg = 0;
-
-
-
-
-
+float USBVoltAvg = 0;
+float BatVoltAvg = 0;
 
 
 
@@ -282,12 +275,16 @@ void setup() {
         out["IoT_RH_R"] = RH;
     };
 
+    thing["RT_USB_Voltage"] >> [](pson& out) { out = USBVolt; };
+    thing["RT_Battery_Voltage"] >> [](pson& out) { out = BatVolt; };
     thing["RT_SensorOK"] >> [](pson& out) { out = SensorsOK; };
 
     thing["Avg_Data"] >> [](pson& out) {
         out["Time_Stamp"] = SD_local_t;
         out["Temperature"] = TempAvg;
         out["Relative_Humidity"] = RHAvg;
+        out["USB_Voltage"] = USBVoltAvg;
+        out["Battery_Voltage"] = BatVoltAvg;
         out["Sensors_OK"] = SensorsOKIoT;
     };
 
@@ -401,9 +398,15 @@ void loop() {
             M5.Lcd.println(RH);
         }
 
+        // Read USB and battery voltages
+        USBVolt = M5.Axp.GetVBusVoltage();
+        BatVolt = M5.Axp.GetBatVoltage();
+
         // Add new values to sum
         TempSum += Temp;
         RHSum += RH;
+        USBVoltSum += USBVolt;
+        BatVoltSum += BatVolt;
 
         // Update Shift registers
         LastSum = m;
@@ -416,6 +419,8 @@ void loop() {
         // Calculate averages
         TempAvg = TempSum / SumNum;
         RHAvg = RHSum / SumNum;
+        USBVoltAvg = USBVoltSum / SumNum;
+        BatVoltAvg = BatVoltSum / SumNum;
 
 
         // Open Year LogFile (create if not available)
@@ -455,6 +460,7 @@ void loop() {
         // Log to SD card
         LogString = (String)UTC_t + "\t" + local_t + "\t" + yr + "\t" + mo + "\t" + dy + "\t" + h + "\t" + m + "\t" + s + "\t" +
             String(TempAvg, 4) + "\t" + String(RHAvg, 4) + "\t" +
+            String(USBVoltAvg, 4) + "\t" + String(BatVoltAvg, 4) + "\t" +
             String(SensorsOKAvg, DEC) + "\t" +
             "0";
         LogFile.println(LogString); // Prints Log string to SD card file "LogFile.txt"
@@ -466,6 +472,8 @@ void loop() {
 
         TempSum = 0;
         RHSum = 0;
+        USBVoltSum = 0;
+        BatVoltSum = 0;
 
         SumNum = 0;
         SensorsOKAvg = B00000001;
@@ -573,7 +581,13 @@ void loop() {
                     else if (i == 9) { // RH
                         RHAvg = buffer.toFloat();
                     }
-                    else if (i == 10) { // SensorsOK
+                    else if (i == 10) { // USB votlage
+                        USBVoltAvg = buffer.toFloat();
+                    }
+                    else if (i == 11) { // Battery voltage
+                        BatVoltAvg = buffer.toFloat();
+                    }
+                    else if (i == 12) { // SensorsOK
                         SensorsOKIoT = buffer.toInt();
                     }
                 }
